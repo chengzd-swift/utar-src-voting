@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>UTAR SRC Voting — Results</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{--navy:#0b1628;--navy2:#112240;--teal:#00c2a8;--teal2:#00e5cc;--gold:#f5c842;--white:#f0f4ff;--muted:#8896b3;--border:rgba(0,194,168,.18);--card:rgba(17,34,64,.9);--radius:14px}
+    html,body{min-height:100%;background:var(--navy);font-family:'DM Sans',sans-serif;color:var(--white)}
+    body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,194,168,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,194,168,.04) 1px,transparent 1px);background-size:48px 48px;pointer-events:none;z-index:0}
+
+    nav{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:16px 40px;background:rgba(11,22,40,.9);border-bottom:1px solid var(--border);backdrop-filter:blur(12px)}
+    .nav-brand{font-family:'Syne',sans-serif;font-weight:700;font-size:1rem;display:flex;align-items:center;gap:10px}
+    .nav-brand::before{content:'';width:28px;height:28px;border-radius:7px;background:linear-gradient(135deg,var(--teal),var(--gold));display:block}
+    .btn-sm{padding:7px 16px;border-radius:8px;font-size:.82rem;font-family:'Syne',sans-serif;font-weight:600;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--white);transition:all .2s}
+    .btn-sm:hover{border-color:var(--teal);color:var(--teal)}
+
+    .main{position:relative;z-index:1;max-width:1000px;margin:0 auto;padding:48px 24px}
+    .section-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(245,200,66,.1);border:1px solid rgba(245,200,66,.25);border-radius:999px;padding:5px 14px;font-size:.73rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--gold);margin-bottom:16px}
+    .page-title{font-family:'Syne',sans-serif;font-size:2rem;font-weight:800;margin-bottom:8px}
+    .page-sub{color:var(--muted);font-size:.95rem;margin-bottom:32px}
+
+    /* ── Election tabs ────────────────────────────────────── */
+    .election-tabs{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:32px}
+    .tab{padding:8px 20px;border-radius:999px;font-family:'Syne',sans-serif;font-size:.85rem;font-weight:600;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted);transition:all .2s}
+    .tab:hover{border-color:var(--teal);color:var(--white)}
+    .tab.active{background:rgba(0,194,168,.12);border-color:var(--teal);color:var(--teal)}
+    .tab.active-el{background:rgba(0,194,168,.2);border-color:var(--teal2)}
+
+    .stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:32px}
+    .stat-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px 24px}
+    .stat-label{font-size:.73rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:6px}
+    .stat-value{font-family:'Syne',sans-serif;font-size:1.8rem;font-weight:700}
+
+    .winner-banner{background:linear-gradient(135deg,rgba(0,194,168,.12),rgba(245,200,66,.08));border:1px solid rgba(245,200,66,.3);border-radius:20px;padding:32px;margin-bottom:36px;display:none;animation:slideUp .5s ease both}
+    .winner-banner.visible{display:block}
+    @keyframes slideUp{from{opacity:0;transform:translateY(16px)}}
+    .winner-label{font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;color:var(--gold);margin-bottom:8px;font-weight:600}
+    .winner-name{font-family:'Syne',sans-serif;font-size:1.8rem;font-weight:800;margin-bottom:4px}
+    .winner-sub{color:var(--muted)}
+
+    .live-notice{display:flex;align-items:center;gap:10px;font-size:.82rem;color:var(--muted);margin-bottom:24px}
+    .dot{width:8px;height:8px;border-radius:50%;background:var(--teal);animation:pulse 1.5s ease-in-out infinite}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+    .results-list{display:flex;flex-direction:column;gap:16px}
+    .result-card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:24px 28px;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:20px;animation:slideUp .4s ease both;transition:border-color .2s}
+    .result-card:hover{border-color:rgba(0,194,168,.35)}
+    .result-card.winner{border-color:rgba(245,200,66,.4);background:rgba(245,200,66,.04)}
+    .result-rank{font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:800;color:var(--muted);min-width:36px;text-align:center}
+    .result-card.winner .result-rank{color:var(--gold)}
+    .result-name{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:700;margin-bottom:3px}
+    .result-meta{font-size:.82rem;color:var(--muted)}
+    .result-right{text-align:right;min-width:120px}
+    .result-votes{font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:700;color:var(--teal)}
+    .result-pct{font-size:.8rem;color:var(--muted);margin-bottom:8px}
+    .bar-track{height:6px;background:rgba(255,255,255,.07);border-radius:999px;overflow:hidden;margin-top:8px}
+    .bar-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--teal),var(--teal2));transition:width 1s ease}
+    .result-card.winner .bar-fill{background:linear-gradient(90deg,var(--gold),#ffe47a)}
+
+    .verify-panel{margin-top:40px;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px 28px}
+    .verify-title{font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;margin-bottom:6px}
+    .verify-sub{font-size:.83rem;color:var(--muted);margin-bottom:16px}
+    .verify-input-row{display:flex;gap:10px}
+    .verify-input{flex:1;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:10px;padding:10px 14px;color:var(--white);font-family:monospace;font-size:.83rem;outline:none}
+    .verify-input:focus{border-color:var(--teal)}
+    .btn-verify{padding:10px 20px;border-radius:10px;border:none;background:var(--teal);color:var(--navy);font-family:'Syne',sans-serif;font-weight:700;font-size:.85rem;cursor:pointer}
+    .verify-result{margin-top:12px;font-size:.85rem;color:var(--teal2);display:none}
+    .verify-result.visible{display:block}
+
+    .empty{text-align:center;padding:60px 24px;color:var(--muted)}
+    .empty-icon{font-size:3rem;margin-bottom:16px}
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-brand">UTAR SRC Voting</div>
+  <div style="display:flex;gap:10px">
+    <button class="btn-sm" onclick="loadResults()">🔄 Refresh</button>
+    <button class="btn-sm" onclick="window.location.href='vote.html'">🗳️ Vote</button>
+    <button class="btn-sm" onclick="logout()">Sign Out</button>
+  </div>
+</nav>
+
+<main class="main">
+  <div class="section-badge">📊 Election Results</div>
+  <h1 class="page-title">Live Results</h1>
+  <p class="page-sub">Select an election to view blockchain-verified results.</p>
+
+  <!-- Election Tabs -->
+  <div class="election-tabs" id="electionTabs">
+    <span style="color:var(--muted);font-size:.9rem;padding:8px 0">Loading elections...</span>
+  </div>
+
+  <!-- Stats Row -->
+  <div class="stats-row">
+    <div class="stat-card"><div class="stat-label">Total Votes</div><div class="stat-value" style="color:var(--teal)" id="totalVotes">—</div></div>
+    <div class="stat-card"><div class="stat-label">Candidates</div><div class="stat-value" id="totalCandidates">—</div></div>
+    <div class="stat-card"><div class="stat-label">Status</div><div class="stat-value" id="electionStatus" style="font-size:1rem;margin-top:6px">—</div></div>
+    <div class="stat-card"><div class="stat-label">Closes</div><div class="stat-value" id="closesAt" style="font-size:.9rem;margin-top:6px">—</div></div>
+  </div>
+
+  <!-- Winner Banner -->
+  <div class="winner-banner" id="winnerBanner">
+    <div class="winner-label">🏆 Election Winner</div>
+    <div class="winner-name" id="winnerName">—</div>
+    <div class="winner-sub" id="winnerSub">—</div>
+  </div>
+
+  <!-- Live notice -->
+  <div class="live-notice">
+    <span class="dot"></span>
+    Results sourced live from the Ethereum blockchain — last updated <span id="lastUpdated">now</span>
+  </div>
+
+  <!-- Results -->
+  <div class="results-list" id="resultsList">
+    <div class="empty"><div class="empty-icon">⬆️</div>Select an election above to view results.</div>
+  </div>
+
+  <!-- Verify -->
+  <div class="verify-panel" id="verifyPanel" style="display:none">
+    <div class="verify-title">🔍 Verify Your Vote</div>
+    <div class="verify-sub">Enter your wallet address to confirm your vote is recorded on the blockchain for this election.</div>
+    <div class="verify-input-row">
+      <input class="verify-input" id="verifyInput" placeholder="0x..."/>
+      <button class="btn-verify" onclick="verifyVote()">Verify</button>
+    </div>
+    <div class="verify-result" id="verifyResult"></div>
+  </div>
+</main>
+
+<script>
+  let elections = [];
+  let activeElectionId = null;
+
+  async function init() {
+    await loadElectionTabs();
+
+    // Auto-select from URL param
+    const params = new URLSearchParams(window.location.search);
+    const elId   = params.get('election');
+    if (elId) selectElection(parseInt(elId));
+  }
+
+  async function loadElectionTabs() {
+    const r = await fetch('/api/elections');
+    const d = await r.json();
+    elections = d.elections || [];
+
+    const tabs = document.getElementById('electionTabs');
+    if (!elections.length) {
+      tabs.innerHTML = '<span style="color:var(--muted);font-size:.9rem">No elections created yet.</span>';
+      return;
+    }
+
+    tabs.innerHTML = elections.map(e => `
+      <button class="tab ${e.status==='active'?'active-el':''}" id="tab-${e.id}" onclick="selectElection(${e.id})">
+        ${e.status === 'active' ? '🟢' : e.status === 'ended' ? '🔴' : '⚙️'} ${e.title}
+      </button>`).join('');
+  }
+
+  function selectElection(id) {
+    activeElectionId = id;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    const tab = document.getElementById(`tab-${id}`);
+    if (tab) tab.classList.add('active');
+    loadResults();
+  }
+
+  async function loadResults() {
+    if (!activeElectionId) return;
+
+    try {
+      const r = await fetch(`/api/elections/${activeElectionId}/results`);
+      const d = await r.json();
+      const candidates = d.candidates || [];
+      const es = d.electionStatus;
+      const el = d.election;
+
+      document.getElementById('totalCandidates').textContent = candidates.length;
+      if (es) {
+        document.getElementById('totalVotes').textContent    = es.totalVotesCast;
+        document.getElementById('electionStatus').textContent = es.isOpen ? '🟢 Open' : '🔴 Closed';
+        if (es.endTime) {
+          document.getElementById('closesAt').textContent =
+            new Date(es.endTime * 1000).toLocaleString('en-MY');
+        }
+      }
+
+      const sorted = [...candidates].sort((a,b)=>(b.vote_count||0)-(a.vote_count||0));
+      const total  = sorted.reduce((s,c)=>s+(c.vote_count||0),0);
+
+      // Winner banner
+      const wb = document.getElementById('winnerBanner');
+      if (!es?.isOpen && sorted.length && sorted[0].vote_count > 0) {
+        wb.classList.add('visible');
+        document.getElementById('winnerName').textContent = sorted[0].full_name;
+        document.getElementById('winnerSub').textContent =
+          `${sorted[0].position} · ${sorted[0].faculty} · ${sorted[0].vote_count} votes`;
+      } else {
+        wb.classList.remove('visible');
+      }
+
+      const list = document.getElementById('resultsList');
+      if (!sorted.length) {
+        list.innerHTML = '<div class="empty"><div class="empty-icon">📭</div>No candidates registered yet.</div>';
+      } else {
+        list.innerHTML = sorted.map((c,i) => {
+          const pct = total > 0 ? Math.round((c.vote_count||0)/total*100) : 0;
+          const isWinner = i===0 && !es?.isOpen && (c.vote_count||0)>0;
+          return `
+            <div class="result-card ${isWinner?'winner':''}" style="animation-delay:${i*.08}s">
+              <div class="result-rank">${i+1}</div>
+              <div>
+                <div class="result-name">${c.full_name} ${isWinner?'🏆':''}</div>
+                <div class="result-meta">${c.position} · ${c.faculty}</div>
+                <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
+              </div>
+              <div class="result-right">
+                <div class="result-votes">${c.vote_count||0}</div>
+                <div class="result-pct">${pct}%</div>
+              </div>
+            </div>`;
+        }).join('');
+      }
+
+      document.getElementById('verifyPanel').style.display = 'block';
+      document.getElementById('lastUpdated').textContent = new Date().toLocaleTimeString('en-MY');
+    } catch {
+      document.getElementById('resultsList').innerHTML =
+        '<div class="empty"><div class="empty-icon">⚠️</div>Could not load results. Is the server running?</div>';
+    }
+  }
+
+  async function verifyVote() {
+    const addr = document.getElementById('verifyInput').value.trim();
+    const el   = document.getElementById('verifyResult');
+    if (!addr || !activeElectionId) { el.textContent='Please enter a wallet address.'; el.className='verify-result visible'; return; }
+
+    try {
+      const r = await fetch(`/api/elections/${activeElectionId}/voter-status/${addr}`);
+      const d = await r.json();
+      if (d.hasVoted) {
+        el.textContent = `✅ Vote confirmed on blockchain. Voted for candidate #${d.votedCandidateId} at ${new Date(d.votedAt*1000).toLocaleString('en-MY')}.`;
+      } else if (d.isRegistered) {
+        el.textContent = '📋 Wallet is registered for this election but has not voted yet.';
+      } else {
+        el.textContent = '❌ Wallet not found in the voter registry for this election.';
+      }
+      el.className = 'verify-result visible';
+    } catch {
+      el.textContent = 'Verification failed — check server connection.';
+      el.className = 'verify-result visible';
+    }
+  }
+
+  function logout() { sessionStorage.clear(); window.location.href = 'login.html'; }
+
+  init();
+  setInterval(() => { if (activeElectionId) loadResults(); }, 30000);
+</script>
+</body>
+</html>

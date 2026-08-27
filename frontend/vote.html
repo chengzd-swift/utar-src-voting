@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>UTAR SRC — Student Portal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{--navy:#0b1628;--navy2:#112240;--teal:#00c2a8;--teal2:#00e5cc;--gold:#f5c842;--white:#f0f4ff;--muted:#8896b3;--red:#f87171;--border:rgba(0,194,168,.18);--card:rgba(17,34,64,.9)}
+    html,body{min-height:100%;background:var(--navy);font-family:'DM Sans',sans-serif;color:var(--white)}
+    body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,194,168,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(0,194,168,.05) 1px,transparent 1px);background-size:48px 48px;animation:gridShift 20s linear infinite;pointer-events:none;z-index:0}
+    @keyframes gridShift{to{background-position:48px 48px}}
+
+    nav{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:15px 40px;background:rgba(11,22,40,.9);border-bottom:1px solid var(--border);backdrop-filter:blur(12px)}
+    .nav-brand{font-family:'Syne',sans-serif;font-weight:700;font-size:1rem;display:flex;align-items:center;gap:10px}
+    .nav-brand::before{content:'';width:28px;height:28px;border-radius:7px;background:linear-gradient(135deg,var(--teal),var(--gold));display:block}
+    .btn-sm{padding:7px 14px;border-radius:8px;font-size:.82rem;font-family:'Syne',sans-serif;font-weight:600;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--white);transition:all .2s}
+    .btn-sm:hover{border-color:var(--teal);color:var(--teal)}
+
+    .main{position:relative;z-index:1;max-width:960px;margin:0 auto;padding:40px 24px}
+
+    /* Tab navigation */
+    .tabs{display:flex;gap:4px;background:rgba(17,34,64,.6);border:1px solid var(--border);border-radius:14px;padding:5px;margin-bottom:32px;width:fit-content}
+    .tab{padding:9px 24px;border-radius:10px;font-family:'Syne',sans-serif;font-size:.88rem;font-weight:600;cursor:pointer;border:none;background:transparent;color:var(--muted);transition:all .2s}
+    .tab:hover{color:var(--white)}
+    .tab.active{background:rgba(0,194,168,.15);color:var(--white);border:1px solid var(--border)}
+
+    .tab-content{display:none}.tab-content.active{display:block;animation:fadeIn .25s ease}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}}
+
+    /* Election selector */
+    .election-picker{background:var(--card);border:1px solid var(--border);border-radius:13px;padding:18px 22px;margin-bottom:24px}
+    .picker-label{font-size:.75rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:9px;font-weight:500}
+    .picker-select{width:100%;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:9px;padding:11px 13px;font-size:.92rem;color:var(--white);font-family:'DM Sans',sans-serif;outline:none;cursor:pointer}
+    .picker-select option{background:#112240}
+    .picker-select:focus{border-color:var(--teal)}
+
+    /* Status bar */
+    .status-bar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;padding:14px 22px;border-radius:12px;background:rgba(17,34,64,.7);border:1px solid var(--border);margin-bottom:28px}
+    .status-item{display:flex;flex-direction:column;gap:2px}
+    .status-label{font-size:.7rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+    .status-value{font-size:.92rem;font-weight:500}
+    .dot{width:7px;height:7px;border-radius:50%;background:var(--teal);animation:pulse 1.5s ease-in-out infinite;display:inline-block;margin-right:5px}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+    /* Candidate cards */
+    .candidates-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:18px;margin-bottom:28px}
+    .candidate-card{background:var(--card);border:2px solid var(--border);border-radius:18px;padding:24px 20px;cursor:pointer;transition:all .22s;position:relative}
+    .candidate-card:hover{border-color:rgba(0,194,168,.4);transform:translateY(-2px);box-shadow:0 10px 32px rgba(0,0,0,.25)}
+    .candidate-card.selected{border-color:var(--teal);background:rgba(0,194,168,.07)}
+    .candidate-avatar{width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--teal),var(--gold));display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700;color:var(--navy);margin-bottom:14px}
+    .cname{font-family:'Syne',sans-serif;font-size:1.05rem;font-weight:700;margin-bottom:3px}
+    .cpos{font-size:.8rem;color:var(--teal);font-weight:500;margin-bottom:3px}
+    .cfac{font-size:.77rem;color:var(--muted);margin-bottom:12px}
+    .cmanifesto{font-size:.82rem;color:#a0afcc;line-height:1.55}
+    .check-circle{position:absolute;top:14px;right:14px;width:26px;height:26px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.85rem;transition:all .2s}
+    .candidate-card.selected .check-circle{background:var(--teal);border-color:var(--teal);color:var(--navy)}
+
+    .vote-panel{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px 28px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px}
+    .btn-vote{padding:13px 36px;border-radius:11px;border:none;background:linear-gradient(135deg,var(--teal),#009d87);font-family:'Syne',sans-serif;font-size:.95rem;font-weight:700;color:var(--navy);cursor:pointer;transition:all .2s;min-width:160px}
+    .btn-vote:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 8px 22px rgba(0,194,168,.35)}
+    .btn-vote:disabled{opacity:.45;cursor:not-allowed}
+
+    .voted-banner{display:none;text-align:center;padding:44px 24px;background:rgba(0,194,168,.06);border:1px solid var(--border);border-radius:18px}
+    .voted-banner.visible{display:block}
+    .voted-icon{font-size:3rem;margin-bottom:14px}
+    .voted-title{font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:700;margin-bottom:7px;color:var(--teal)}
+    .voted-sub{color:var(--muted);margin-bottom:20px}
+    .tx-hash{font-size:.75rem;color:var(--muted);font-family:monospace;background:rgba(0,0,0,.2);padding:7px 12px;border-radius:7px;word-break:break-all}
+
+    /* Nomination form */
+    .nom-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px;margin-bottom:20px}
+    .nom-card-title{font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;margin-bottom:6px}
+    .nom-card-sub{font-size:.85rem;color:var(--muted);margin-bottom:22px;line-height:1.6}
+    .field{margin-bottom:15px}
+    .field label{display:block;font-size:.76rem;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px}
+    .field input,.field select,.field textarea{width:100%;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:9px;padding:10px 13px;font-size:.9rem;color:var(--white);font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s}
+    .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--teal)}
+    .field textarea{resize:vertical;min-height:80px}
+    .field select option{background:#112240}
+    .form-row{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+    .btn-submit{padding:12px 28px;border-radius:10px;border:none;background:linear-gradient(135deg,var(--teal),#009d87);font-family:'Syne',sans-serif;font-size:.92rem;font-weight:700;color:var(--navy);cursor:pointer;transition:all .2s}
+    .btn-submit:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(0,194,168,.3)}
+    .btn-submit:disabled{opacity:.5;cursor:not-allowed;transform:none}
+
+    /* My nominations table */
+    .my-noms-list{display:flex;flex-direction:column;gap:11px;margin-top:20px}
+    .my-nom-item{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:11px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    .my-nom-info .pos{font-weight:600;font-family:'Syne',sans-serif;font-size:.9rem}
+    .my-nom-info .meta{font-size:.78rem;color:var(--muted);margin-top:2px}
+    .tag{display:inline-block;padding:3px 10px;border-radius:999px;font-size:.7rem;font-weight:600}
+    .tag-gold{background:rgba(245,200,66,.12);color:var(--gold)}
+    .tag-green{background:rgba(0,194,168,.12);color:var(--teal)}
+    .tag-red{background:rgba(248,113,113,.12);color:var(--red)}
+
+    .notice{padding:12px 16px;border-radius:11px;font-size:.83rem;margin-bottom:16px}
+    .notice-info{background:rgba(0,194,168,.05);border:1px solid var(--border);color:var(--muted)}
+    .notice-warn{background:rgba(245,200,66,.06);border:1px solid rgba(245,200,66,.2);color:#d4b84a}
+
+    .empty{text-align:center;padding:48px 24px;color:var(--muted)}
+    .empty-icon{font-size:2.5rem;margin-bottom:12px}
+
+    .toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--navy2);border:1px solid var(--border);border-radius:11px;padding:12px 22px;font-size:.88rem;z-index:999;transition:transform .3s ease;white-space:nowrap;box-shadow:0 8px 28px rgba(0,0,0,.4)}
+    .toast.show{transform:translateX(-50%) translateY(0)}
+    .toast.success{border-color:var(--teal);color:#00e5cc}
+    .toast.error{border-color:rgba(239,68,68,.4);color:#fca5a5}
+
+    .loader{width:16px;height:16px;border:2px solid rgba(11,22,40,.3);border-top-color:var(--navy);border-radius:50%;animation:spin .7s linear infinite;display:none}
+    @keyframes spin{to{transform:rotate(360deg)}}
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-brand">UTAR SRC Voting</div>
+  <div style="display:flex;gap:8px;align-items:center">
+    <span style="font-size:.82rem;color:var(--muted)">👤 <strong id="navUser" style="color:var(--white)">—</strong></span>
+    <button class="btn-sm" onclick="window.location.href='results.html'">📊 Results</button>
+    <button class="btn-sm" onclick="logout()">Sign Out</button>
+  </div>
+</nav>
+
+<main class="main">
+
+  <!-- Tab Navigation -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('vote',this)">🗳️ Cast My Vote</button>
+    <button class="tab" onclick="switchTab('nominate',this)">📝 Nominate Myself</button>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       TAB 1 — CAST VOTE
+  ══════════════════════════════════════════════════════════ -->
+  <div id="tab-vote" class="tab-content active">
+
+    <div class="election-picker">
+      <div class="picker-label">Select Election</div>
+      <select class="picker-select" id="voteElSelect" onchange="onVoteElChange()">
+        <option value="">— Choose an election —</option>
+      </select>
+    </div>
+
+    <div class="status-bar" id="voteStatusBar" style="display:none">
+      <div class="status-item"><span class="status-label">Election</span><span class="status-value" id="voteElTitle">—</span></div>
+      <div class="status-item"><span class="status-label">Status</span><span class="status-value"><span class="dot"></span><span id="voteStatusText">—</span></span></div>
+      <div class="status-item"><span class="status-label">Closes</span><span class="status-value" id="voteEndTime">—</span></div>
+      <div class="status-item"><span class="status-label">Votes Cast</span><span class="status-value" id="voteCount">—</span></div>
+    </div>
+
+    <div class="voted-banner" id="votedBanner">
+      <div class="voted-icon">✅</div>
+      <h2 class="voted-title">Vote Recorded on Blockchain</h2>
+      <p class="voted-sub">Your ballot is permanently and immutably recorded. No one can alter it.</p>
+      <button class="btn-submit" style="margin:0 auto 18px" onclick="window.location.href='results.html?election='+currentVoteElId">View Live Results</button>
+      <p class="tx-hash" id="txHashDisplay"></p>
+    </div>
+
+    <div class="empty" id="voteEmpty">
+      <div class="empty-icon">🗳️</div>
+      <p>Select an active election above to see candidates and cast your vote.</p>
+    </div>
+
+    <div class="candidates-grid" id="candidatesGrid" style="display:none"></div>
+
+    <div class="vote-panel" id="votePanel" style="display:none">
+      <div style="font-size:.92rem;color:var(--muted)">Selected: <strong id="selectedName" style="color:var(--white)">None</strong></div>
+      <button class="btn-vote" id="voteBtn" disabled onclick="castVote()">
+        <span id="voteBtnText">Cast Vote</span>
+        <div class="loader" id="voteLoader"></div>
+      </button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       TAB 2 — NOMINATE MYSELF
+  ══════════════════════════════════════════════════════════ -->
+  <div id="tab-nominate" class="tab-content">
+
+    <div class="notice notice-info">
+      📋 <strong>How nomination works:</strong> Select an election with open nominations, fill in your details below, and submit. The Election Committee will review your nomination and notify you of the outcome. If approved, you will automatically appear as a candidate on the blockchain.
+    </div>
+
+    <div class="election-picker">
+      <div class="picker-label">Select Election to Nominate For</div>
+      <select class="picker-select" id="nomElSelect" onchange="onNomElChange()">
+        <option value="">— Choose an election —</option>
+      </select>
+    </div>
+
+    <div class="notice notice-warn" id="nomClosedNotice" style="display:none">
+      🔒 Nominations are not currently open for this election. Check back during the nomination period.
+    </div>
+
+    <div id="nomForm" style="display:none">
+      <div class="nom-card">
+        <div class="nom-card-title">📝 Submit Your Nomination</div>
+        <div class="nom-card-sub">
+          You can nominate yourself for one position per election. Your proposer and seconder must be registered students from the same campus (Regulation XIII, Reg 20).
+        </div>
+
+        <div class="field">
+          <label>Position you are running for</label>
+          <select id="nomPosition">
+            <option value="">— Select position —</option>
+            <option>Chairperson</option>
+            <option>Vice Chairperson</option>
+            <option>Secretary</option>
+            <option>Treasurer</option>
+            <option>Auditor 1</option>
+            <option>Auditor 2</option>
+            <option>Faculty/Institute Representative</option>
+            <option>Campus Wide Representative</option>
+            <option>International Representative</option>
+            <option>Postgraduate Representative</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Election manifesto / campaign statement</label>
+          <textarea id="nomManifesto" placeholder="Describe your goals and what you will do for students if elected..."></textarea>
+        </div>
+
+        <div style="margin-bottom:16px">
+          <div style="font-size:.78rem;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:12px">Proposer &amp; Seconder (Reg 20)</div>
+          <div class="form-row">
+            <div class="field">
+              <label>Proposer full name</label>
+              <input type="text" id="nomProposerName" placeholder="Proposer's name"/>
+            </div>
+            <div class="field">
+              <label>Proposer student ID</label>
+              <input type="text" id="nomProposerId" placeholder="e.g. 2207001"/>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="field">
+              <label>Seconder full name</label>
+              <input type="text" id="nomSeconderName" placeholder="Seconder's name"/>
+            </div>
+            <div class="field">
+              <label>Seconder student ID</label>
+              <input type="text" id="nomSeconderId" placeholder="e.g. 2207002"/>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn-submit" id="nomBtn" onclick="submitNomination()">
+          <span id="nomBtnText">Submit Nomination</span>
+          <div class="loader" id="nomLoader"></div>
+        </button>
+      </div>
+    </div>
+
+    <!-- My previous nominations -->
+    <div class="nom-card" id="myNomsCard" style="display:none">
+      <div class="nom-card-title">📋 My Nomination History</div>
+      <div class="my-noms-list" id="myNomsList"></div>
+    </div>
+
+  </div>
+
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+<script>
+  let user, elections=[], selectedVoteEl=null, selectedNomEl=null;
+  let selectedCandidateId=null, currentVoteElId=null, contractInfo=null;
+
+  async function init() {
+    user=JSON.parse(sessionStorage.getItem('user')||'null');
+    if (!user) { window.location.href='login.html'; return; }
+    document.getElementById('navUser').textContent=user.full_name;
+    try { contractInfo=await fetch('/contract.json').then(r=>r.json()); } catch {}
+    await loadAllElections();
+    await loadMyNominations();
+  }
+
+  async function loadAllElections() {
+    const r=await fetch('/api/elections'); const d=await r.json();
+    elections=d.elections||[];
+    const activeEls=elections.filter(e=>e.status==='active'||e.status==='ended');
+    const nomEls=elections.filter(e=>e.status==='nomination'||e.status==='setup'||e.status==='active');
+
+    const vSel=document.getElementById('voteElSelect');
+    vSel.innerHTML='<option value="">— Choose an election —</option>'+
+      activeEls.map(e=>`<option value="${e.id}">${e.title} — ${e.status==='active'?'🟢 Open':'🔴 Ended'}</option>`).join('');
+
+    const nSel=document.getElementById('nomElSelect');
+    nSel.innerHTML='<option value="">— Choose an election —</option>'+
+      nomEls.map(e=>`<option value="${e.id}">${e.title} (${e.academic_year}) — ${e.status}</option>`).join('');
+  }
+
+  // ── Tab switching ──────────────────────────────────────────
+  function switchTab(id, btn) {
+    document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    document.getElementById(`tab-${id}`).classList.add('active');
+    btn.classList.add('active');
+    if (id==='nominate') loadMyNominations();
+  }
+
+  // ── VOTE TAB ───────────────────────────────────────────────
+  async function onVoteElChange() {
+    const id=document.getElementById('voteElSelect').value;
+    selectedVoteEl=elections.find(e=>e.id==id)||null;
+    currentVoteElId=id||null;
+    selectedCandidateId=null;
+    document.getElementById('votedBanner').classList.remove('visible');
+    document.getElementById('candidatesGrid').style.display='none';
+    document.getElementById('votePanel').style.display='none';
+    document.getElementById('voteEmpty').style.display='none';
+    document.getElementById('voteStatusBar').style.display='none';
+    if (!selectedVoteEl) { document.getElementById('voteEmpty').style.display='block'; return; }
+    await loadVoteStatus();
+    if (selectedVoteEl.status !== 'active') {
+      document.getElementById('voteEmpty').style.display='block';
+      document.getElementById('voteEmpty').innerHTML='<div style="font-size:2.5rem;margin-bottom:12px">🔴</div><p>Voting for this election has ended. <a href="results.html?election='+id+'" style="color:var(--teal)">View Results →</a></p>';
+      return;
+    }
+    if (user.wallet_address && contractInfo) {
+      try {
+        const vs=await fetch(`/api/elections/${id}/voter-status/${user.wallet_address}`).then(r=>r.json());
+        if (vs.hasVoted) { showVotedState(); return; }
+        if (!vs.isRegistered) toast('You are not registered as a voter for this election. Contact the Election Committee.','error');
+      } catch {}
+    }
+    await loadCandidates();
+  }
+
+  async function loadVoteStatus() {
+    try {
+      const r=await fetch(`/api/elections/${selectedVoteEl.id}`); const d=await r.json();
+      const el=d.election;
+      document.getElementById('voteStatusBar').style.display='flex';
+      document.getElementById('voteElTitle').textContent=el.title;
+      document.getElementById('voteStatusText').textContent=el.is_open?'Voting Open':'Voting Closed';
+      document.getElementById('voteCount').textContent=el.total_votes??'—';
+      if (el.bc_end_time) document.getElementById('voteEndTime').textContent=new Date(el.bc_end_time*1000).toLocaleString('en-MY');
+    } catch {}
+  }
+
+  async function loadCandidates() {
+    const r=await fetch(`/api/elections/${selectedVoteEl.id}/candidates`); const d=await r.json();
+    const candidates=d.candidates||[];
+    const grid=document.getElementById('candidatesGrid');
+    if (!candidates.length) {
+      document.getElementById('voteEmpty').style.display='block';
+      document.getElementById('voteEmpty').innerHTML='<div style="font-size:2.5rem;margin-bottom:12px">📭</div><p>No candidates registered for this election yet.</p>';
+      return;
+    }
+    grid.style.display='grid';
+    grid.innerHTML=candidates.map(c=>`
+      <div class="candidate-card" id="card-${c.blockchain_id}" onclick="selectCandidate(${c.blockchain_id},'${c.full_name.replace(/'/g,"\\'")}')">
+        <div class="check-circle">✓</div>
+        <div class="candidate-avatar">${c.full_name.charAt(0)}</div>
+        <div class="cname">${c.full_name}</div>
+        <div class="cpos">${c.position}</div>
+        <div class="cfac">${c.faculty}</div>
+        <div class="cmanifesto">"${c.manifesto||'No manifesto provided.'}"</div>
+      </div>`).join('');
+    document.getElementById('votePanel').style.display='flex';
+  }
+
+  function selectCandidate(id, name) {
+    document.querySelectorAll('.candidate-card').forEach(el=>el.classList.remove('selected'));
+    if (selectedCandidateId===id) {
+      selectedCandidateId=null;
+      document.getElementById('selectedName').textContent='None';
+      document.getElementById('voteBtn').disabled=true;
+    } else {
+      selectedCandidateId=id;
+      document.getElementById(`card-${id}`).classList.add('selected');
+      document.getElementById('selectedName').textContent=name;
+      document.getElementById('voteBtn').disabled=false;
+    }
+  }
+
+  async function castVote() {
+    if (!selectedCandidateId||!selectedVoteEl) return;
+    if (!window.ethereum) { toast('MetaMask is required to vote.','error'); return; }
+    if (!contractInfo) { toast('Contract not found. Contact the Election Committee.','error'); return; }
+    setVoteLoading(true);
+    try {
+      const provider=new ethers.providers.Web3Provider(window.ethereum);
+      await provider.send('eth_requestAccounts',[]);
+      const signer=provider.getSigner();
+      const contract=new ethers.Contract(contractInfo.address, contractInfo.abi, signer);
+      const tx=await contract.vote(selectedVoteEl.blockchain_id, selectedCandidateId);
+      toast('Transaction submitted. Waiting for confirmation...','success');
+      const receipt=await tx.wait();
+      showVotedState(receipt.transactionHash);
+      toast('✅ Vote permanently recorded on blockchain!','success');
+    } catch (err) {
+      toast(err.reason||err.message||'Transaction failed.','error');
+    } finally { setVoteLoading(false); }
+  }
+
+  function showVotedState(txHash) {
+    document.getElementById('candidatesGrid').style.display='none';
+    document.getElementById('votePanel').style.display='none';
+    document.getElementById('voteEmpty').style.display='none';
+    document.getElementById('votedBanner').classList.add('visible');
+    if (txHash) document.getElementById('txHashDisplay').textContent=`TX: ${txHash}`;
+  }
+  function setVoteLoading(on) {
+    document.getElementById('voteBtnText').style.display=on?'none':'inline';
+    document.getElementById('voteLoader').style.display=on?'block':'none';
+    document.getElementById('voteBtn').disabled=on;
+  }
+
+  // ── NOMINATE TAB ───────────────────────────────────────────
+  function onNomElChange() {
+    const id=document.getElementById('nomElSelect').value;
+    selectedNomEl=elections.find(e=>e.id==id)||null;
+    const form=document.getElementById('nomForm');
+    const notice=document.getElementById('nomClosedNotice');
+    if (!selectedNomEl) { form.style.display='none'; notice.style.display='none'; return; }
+    if (selectedNomEl.status==='nomination') {
+      form.style.display='block'; notice.style.display='none';
+    } else {
+      form.style.display='none'; notice.style.display='block';
+    }
+  }
+
+  async function submitNomination() {
+    if (!selectedNomEl) { toast('Select an election first.','error'); return; }
+    const position=document.getElementById('nomPosition').value;
+    const manifesto=document.getElementById('nomManifesto').value.trim();
+    const proposer_name=document.getElementById('nomProposerName').value.trim();
+    const proposer_id=document.getElementById('nomProposerId').value.trim();
+    const seconder_name=document.getElementById('nomSeconderName').value.trim();
+    const seconder_id=document.getElementById('nomSeconderId').value.trim();
+    if (!position) { toast('Please select a position.','error'); return; }
+    if (!proposer_name||!proposer_id||!seconder_name||!seconder_id)
+      { toast('Proposer and seconder details are required (Reg 20).','error'); return; }
+
+    const btn=document.getElementById('nomBtn');
+    btn.disabled=true;
+    document.getElementById('nomBtnText').style.display='none';
+    document.getElementById('nomLoader').style.display='block';
+
+    try {
+      const r=await fetch('/api/nominations',{
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          election_id:selectedNomEl.id, student_user_id:user.id,
+          position, manifesto, proposer_name, proposer_id, seconder_name, seconder_id
+        }),
+      });
+      const d=await r.json();
+      if (!r.ok) { toast(d.error,'error'); return; }
+      toast('✅ Nomination submitted! Awaiting Election Committee review.','success');
+      // Reset form
+      ['nomPosition','nomManifesto','nomProposerName','nomProposerId','nomSeconderName','nomSeconderId'].forEach(id=>{
+        const el=document.getElementById(id);
+        el.tagName==='SELECT'?el.selectedIndex=0:el.value='';
+      });
+      await loadMyNominations();
+    } catch { toast('Network error.','error'); }
+    finally {
+      btn.disabled=false;
+      document.getElementById('nomBtnText').style.display='inline';
+      document.getElementById('nomLoader').style.display='none';
+    }
+  }
+
+  async function loadMyNominations() {
+    if (!user) return;
+    try {
+      const r=await fetch(`/api/nominations/student/${user.id}`); const d=await r.json();
+      const noms=d.nominations||[];
+      const card=document.getElementById('myNomsCard');
+      const list=document.getElementById('myNomsList');
+      if (!noms.length) { card.style.display='none'; return; }
+      card.style.display='block';
+      list.innerHTML=noms.map(n=>`
+        <div class="my-nom-item">
+          <div class="my-nom-info">
+            <div class="pos">${n.position} — ${n.election_title}</div>
+            <div class="meta">Submitted: ${new Date(n.created_at).toLocaleString('en-MY')}</div>
+            ${n.rejection_reason?`<div class="meta" style="color:var(--red)">Reason: ${n.rejection_reason}</div>`:''}
+          </div>
+          <span class="tag ${n.status==='pending'?'tag-gold':n.status==='approved'?'tag-green':'tag-red'}">
+            ${n.status==='pending'?'⏳ Pending':n.status==='approved'?'✅ Approved':'❌ Rejected'}
+          </span>
+        </div>`).join('');
+    } catch {}
+  }
+
+  function toast(msg, type='success') {
+    const el=document.getElementById('toast');
+    el.textContent=msg; el.className=`toast ${type} show`;
+    setTimeout(()=>{el.className=`toast ${type}`;},3500);
+  }
+  function logout() { sessionStorage.clear(); window.location.href='login.html'; }
+
+  init();
+</script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+{
+  "name": "utar-src-voting",
+  "version": "4.0.0",
+  "description": "UTAR SRC Voting System v4 — Election Committee only, student self-nomination",
+  "scripts": {
+    "start": "node backend/server.js",
+    "compile": "npx hardhat compile",
+    "deploy": "npx hardhat run scripts/deploy.js --network localhost",
+    "db:setup": "mysql -u root -p < db/setup.sql"
+  },
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "ethers": "^6.11.1",
+    "express": "^4.19.2",
+    "mysql2": "^3.9.7"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "hardhat": "^2.22.3"
+  }
+}

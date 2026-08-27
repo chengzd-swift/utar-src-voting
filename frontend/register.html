@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>UTAR SRC Voting — Register</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#f4f6fb; --white:#ffffff; --navy:#0f1e3c; --teal:#0ea5e9;
+      --teal-dark:#0284c7; --green:#10b981; --red:#ef4444;
+      --muted:#64748b; --border:#e2e8f0; --shadow:0 4px 24px rgba(15,30,60,.08);
+    }
+    body{min-height:100vh;background:var(--bg);font-family:'Plus Jakarta Sans',sans-serif;color:var(--navy);display:flex;align-items:center;justify-content:center;padding:24px}
+
+    .page{display:grid;grid-template-columns:1fr 1fr;max-width:1000px;width:100%;min-height:600px;border-radius:24px;overflow:hidden;box-shadow:0 20px 60px rgba(15,30,60,.15)}
+
+    /* ── Left ────────────────────────────────────────────── */
+    .left{background:linear-gradient(145deg,#0f1e3c,#1e3a6e);padding:52px 44px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden}
+    .left::before{content:'';position:absolute;top:-60px;right:-60px;width:280px;height:280px;border-radius:50%;background:rgba(14,165,233,.12)}
+    .left::after{content:'';position:absolute;bottom:-80px;left:-40px;width:220px;height:220px;border-radius:50%;background:rgba(16,185,129,.08)}
+    .brand{display:flex;align-items:center;gap:12px;font-size:1rem;font-weight:700;color:#fff;position:relative}
+    .brand-dot{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,#0ea5e9,#10b981);display:block;flex-shrink:0}
+    .left-body{position:relative}
+    .left-title{font-size:1.9rem;font-weight:800;color:#fff;line-height:1.2;margin-bottom:14px}
+    .left-title span{color:#0ea5e9}
+    .left-desc{font-size:.9rem;color:rgba(255,255,255,.65);line-height:1.7;margin-bottom:32px}
+    .steps{display:flex;flex-direction:column;gap:14px}
+    .step{display:flex;align-items:flex-start;gap:14px}
+    .step-num{width:28px;height:28px;border-radius:50%;background:rgba(14,165,233,.18);border:1px solid rgba(14,165,233,.35);display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;color:#0ea5e9;flex-shrink:0;margin-top:1px}
+    .step-text{font-size:.83rem;color:rgba(255,255,255,.65);line-height:1.5}
+    .step-text strong{color:rgba(255,255,255,.9);display:block;margin-bottom:2px}
+
+    /* ── Right ───────────────────────────────────────────── */
+    .right{background:var(--white);padding:48px 44px;overflow-y:auto}
+    .form-title{font-size:1.5rem;font-weight:800;margin-bottom:4px}
+    .form-sub{font-size:.85rem;color:var(--muted);margin-bottom:28px}
+
+    .form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .field{margin-bottom:16px}
+    .field label{display:block;font-size:.78rem;font-weight:600;color:var(--navy);margin-bottom:6px;letter-spacing:.02em}
+    .field input,.field select{width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:.9rem;font-family:'Plus Jakarta Sans',sans-serif;color:var(--navy);background:var(--bg);outline:none;transition:border-color .2s,box-shadow .2s}
+    .field input:focus,.field select:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(14,165,233,.1);background:#fff}
+    .field select option{background:#fff}
+    .field .hint{font-size:.74rem;color:var(--muted);margin-top:5px}
+
+    /* Password strength */
+    .pw-bar{height:4px;border-radius:999px;background:var(--border);margin-top:8px;overflow:hidden}
+    .pw-fill{height:100%;border-radius:999px;transition:width .3s,background .3s;width:0}
+    .pw-label{font-size:.74rem;margin-top:4px}
+
+    .btn{width:100%;padding:13px;border-radius:10px;font-family:'Plus Jakarta Sans',sans-serif;font-size:.95rem;font-weight:700;cursor:pointer;border:none;transition:all .2s;background:linear-gradient(135deg,var(--teal),var(--teal-dark));color:#fff;margin-top:4px}
+    .btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(14,165,233,.35)}
+    .btn:active{transform:translateY(0)}
+    .btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+
+    .msg{margin-top:14px;padding:12px 16px;border-radius:10px;font-size:.85rem;display:none}
+    .msg.error{background:#fef2f2;border:1px solid #fecaca;color:#dc2626}
+    .msg.success{background:#f0fdf4;border:1px solid #bbf7d0;color:#16a34a}
+    .msg.visible{display:block}
+
+    .login-link{text-align:center;margin-top:20px;font-size:.82rem;color:var(--muted)}
+    .login-link a{color:var(--teal);text-decoration:none;font-weight:600}
+
+    @media(max-width:700px){.page{grid-template-columns:1fr}.left{display:none}}
+  </style>
+</head>
+<body>
+<div class="page">
+  <!-- Left Panel -->
+  <div class="left">
+    <div class="brand"><span class="brand-dot"></span>UTAR SRC Voting</div>
+    <div class="left-body">
+      <h2 class="left-title">Create Your<br><span>Voter Account</span></h2>
+      <p class="left-desc">Register once and participate in all future UTAR SRC elections securely and transparently.</p>
+      <div class="steps">
+        <div class="step"><div class="step-num">1</div><div class="step-text"><strong>Fill in your details</strong>Use your official UTAR student ID and email</div></div>
+        <div class="step"><div class="step-num">2</div><div class="step-text"><strong>Await EC approval</strong>The Election Committee will verify and approve your account</div></div>
+        <div class="step"><div class="step-num">3</div><div class="step-text"><strong>Link your wallet</strong>Election Committee links your MetaMask wallet after approval</div></div>
+        <div class="step"><div class="step-num">4</div><div class="step-text"><strong>Cast your vote</strong>Log in and vote in any active election you are eligible for</div></div>
+      </div>
+    </div>
+    <div style="font-size:.75rem;color:rgba(255,255,255,.35)">UTAR SRC Election System · Blockchain-Secured</div>
+  </div>
+
+  <!-- Right Form -->
+  <div class="right">
+    <h2 class="form-title">Student Registration</h2>
+    <p class="form-sub">All fields are required. Use your official UTAR details.</p>
+
+    <div class="form-row">
+      <div class="field">
+        <label>Student ID</label>
+        <input type="text" id="studentId" placeholder="e.g. 2207492" maxlength="20"/>
+      </div>
+      <div class="field">
+        <label>Full Name</label>
+        <input type="text" id="fullName" placeholder="As per student card"/>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>UTAR Email</label>
+      <input type="email" id="email" placeholder="e.g. 2207492@1utar.my"/>
+    </div>
+
+    <div class="field">
+      <label>Faculty / Programme</label>
+      <select id="faculty">
+        <option value="">— Select your faculty —</option>
+        <optgroup label="Undergraduate Programmes (by Faculty)">
+          <option>Faculty of Accountancy and Management (FAM)</option>
+          <option>Faculty of Arts and Social Science (FAS)</option>
+          <option>Faculty of Creative Industries (FCI)</option>
+          <option>Faculty of Education (FED)</option>
+          <option>Faculty of Engineering and Green Technology (FEGT)</option>
+          <option>Faculty of Information and Communication Technology (FICT)</option>
+          <option>Faculty of Science (FSC)</option>
+          <option>Institute of Chinese Studies (FCS)</option>
+          <option>Lee Kong Chian Faculty of Engineering and Science (LKC FES)</option>
+          <option>M. Kandiah Faculty of Medicine and Health Sciences (MK FMHS)</option>
+          <option>Teh Hong Piow Faculty of Business and Finance (THP FBF)</option>
+        </optgroup>
+        <optgroup label="Foundation Programme">
+          <option>Foundation in Science</option>
+          <option>Foundation in Arts</option>
+        </optgroup>
+      </select>
+    </div>
+
+    <div class="form-row">
+      <div class="field">
+        <label>Password</label>
+        <input type="password" id="password" placeholder="Min. 8 characters" oninput="checkStrength()"/>
+        <div class="pw-bar"><div class="pw-fill" id="pwFill"></div></div>
+        <div class="pw-label" id="pwLabel" style="color:var(--muted)"></div>
+      </div>
+      <div class="field">
+        <label>Confirm Password</label>
+        <input type="password" id="confirmPassword" placeholder="Re-enter password"/>
+      </div>
+    </div>
+    <div class="hint" style="font-size:.78rem;color:var(--muted);margin-bottom:14px;margin-top:-8px">
+      Password must be at least 8 characters with a mix of letters and numbers.
+    </div>
+
+    <button class="btn" id="registerBtn" onclick="handleRegister()">Create Account</button>
+    <div class="msg" id="msg"></div>
+    <p class="login-link">Already have an account? <a href="login.html">Sign in here</a></p>
+  </div>
+</div>
+
+<script>
+  function checkStrength() {
+    const pw   = document.getElementById('password').value;
+    const fill = document.getElementById('pwFill');
+    const lbl  = document.getElementById('pwLabel');
+    let score  = 0;
+    if (pw.length >= 8)  score++;
+    if (/[A-Z]/.test(pw)) score++;
+    if (/[0-9]/.test(pw)) score++;
+    if (/[^A-Za-z0-9]/.test(pw)) score++;
+    const colors = ['#ef4444','#f97316','#eab308','#10b981'];
+    const labels = ['Weak','Fair','Good','Strong'];
+    const widths = ['25%','50%','75%','100%'];
+    if (pw.length === 0) { fill.style.width='0'; lbl.textContent=''; return; }
+    fill.style.width   = widths[score-1] || '25%';
+    fill.style.background = colors[score-1] || '#ef4444';
+    lbl.textContent    = labels[score-1] || 'Weak';
+    lbl.style.color    = colors[score-1] || '#ef4444';
+  }
+
+  function showMsg(text, type) {
+    const el = document.getElementById('msg');
+    el.textContent = text;
+    el.className = `msg ${type} visible`;
+  }
+
+  async function handleRegister() {
+    const student_id = document.getElementById('studentId').value.trim();
+    const full_name  = document.getElementById('fullName').value.trim();
+    const email      = document.getElementById('email').value.trim();
+    const faculty    = document.getElementById('faculty').value;
+    const password   = document.getElementById('password').value;
+    const confirm    = document.getElementById('confirmPassword').value;
+
+    if (!student_id||!full_name||!email||!faculty||!password)
+      return showMsg('Please fill in all fields.', 'error');
+    if (password.length < 8)
+      return showMsg('Password must be at least 8 characters.', 'error');
+    if (password !== confirm)
+      return showMsg('Passwords do not match.', 'error');
+
+    const btn = document.getElementById('registerBtn');
+    btn.disabled = true;
+    btn.textContent = 'Submitting...';
+
+    try {
+      const res  = await fetch('/api/auth/register', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ student_id, full_name, email, faculty, password }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) { showMsg(data.error || 'Registration failed.', 'error'); return; }
+
+      showMsg('✅ Registration submitted successfully! Your account is pending SRC Committee approval. You will be able to log in once approved.', 'success');
+      btn.textContent = 'Submitted!';
+    } catch {
+      showMsg('Network error. Is the server running?', 'error');
+      btn.disabled = false;
+      btn.textContent = 'Create Account';
+    }
+  }
+
+  document.getElementById('confirmPassword').addEventListener('keydown', e => {
+    if (e.key === 'Enter') handleRegister();
+  });
+</script>
+</body>
+</html>

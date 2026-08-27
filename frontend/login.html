@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>UTAR SRC Voting — Student Login</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#f4f6fb;--white:#fff;--navy:#0f1e3c;
+      --teal:#0ea5e9;--teal-dark:#0284c7;
+      --muted:#64748b;--border:#e2e8f0;
+    }
+    body{min-height:100vh;background:var(--bg);font-family:'Plus Jakarta Sans',sans-serif;color:var(--navy);display:flex;align-items:stretch}
+
+    .page{display:grid;grid-template-columns:1.2fr 1fr;width:100%;max-width:1100px;margin:auto;min-height:100vh;box-shadow:0 0 80px rgba(15,30,60,.12)}
+
+    /* ── Left panel ─────────────────────────────────────────── */
+    .left{background:linear-gradient(160deg,#0f1e3c 0%,#1a3a72 60%,#0ea5e9 100%);padding:64px 56px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden}
+    .mesh{position:absolute;inset:0;background-image:radial-gradient(circle at 20% 20%,rgba(14,165,233,.15) 0%,transparent 50%),radial-gradient(circle at 80% 80%,rgba(16,185,129,.1) 0%,transparent 50%);pointer-events:none}
+    .brand{display:flex;align-items:center;gap:12px;font-size:1.05rem;font-weight:700;color:#fff;position:relative;z-index:1}
+    .brand-icon{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#0ea5e9,#10b981);display:flex;align-items:center;justify-content:center;font-size:1.1rem}
+    .left-mid{position:relative;z-index:1}
+    .left-tag{display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:999px;padding:5px 14px;font-size:.75rem;font-weight:600;color:rgba(255,255,255,.9);letter-spacing:.05em;text-transform:uppercase;margin-bottom:20px}
+    .left-tag::before{content:'';width:7px;height:7px;border-radius:50%;background:#10b981;animation:blink 2s ease-in-out infinite}
+    @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+    .left-title{font-size:2.6rem;font-weight:800;color:#fff;line-height:1.15;margin-bottom:16px}
+    .left-title em{font-style:normal;color:#0ea5e9}
+    .left-desc{font-size:.92rem;color:rgba(255,255,255,.6);line-height:1.7;max-width:380px;margin-bottom:40px}
+    .features{display:flex;flex-direction:column;gap:12px}
+    .feat{display:flex;align-items:center;gap:12px;font-size:.85rem;color:rgba(255,255,255,.7)}
+    .feat-icon{width:34px;height:34px;border-radius:9px;background:rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;font-size:.95rem;flex-shrink:0}
+    .left-footer{font-size:.74rem;color:rgba(255,255,255,.3);position:relative;z-index:1}
+
+    /* ── Right panel ────────────────────────────────────────── */
+    .right{background:var(--white);padding:64px 56px;display:flex;flex-direction:column;justify-content:center}
+    .form-header{margin-bottom:32px}
+    .form-title{font-size:1.7rem;font-weight:800;margin-bottom:6px}
+    .form-sub{font-size:.87rem;color:var(--muted)}
+
+    .field{margin-bottom:18px}
+    .field label{display:block;font-size:.78rem;font-weight:600;color:var(--navy);margin-bottom:7px}
+    .field input{width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:.92rem;font-family:'Plus Jakarta Sans',sans-serif;color:var(--navy);background:var(--bg);outline:none;transition:border-color .2s,box-shadow .2s}
+    .field input:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(14,165,233,.1);background:#fff}
+    .field input::placeholder{color:#94a3b8}
+
+    .divider{display:flex;align-items:center;gap:12px;margin:20px 0;color:var(--muted);font-size:.8rem}
+    .divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border)}
+
+    .btn{width:100%;padding:13px;border-radius:10px;font-family:'Plus Jakarta Sans',sans-serif;font-size:.95rem;font-weight:700;cursor:pointer;border:none;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px}
+    .btn-primary{background:linear-gradient(135deg,var(--teal),var(--teal-dark));color:#fff}
+    .btn-primary:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 8px 24px rgba(14,165,233,.35)}
+    .btn-primary:disabled{opacity:.55;cursor:not-allowed}
+    .btn-metamask{background:var(--bg);border:1.5px solid var(--border);color:var(--navy);font-size:.88rem}
+    .btn-metamask:hover{border-color:var(--teal);background:#f0f9ff}
+    .btn-metamask.connected{border-color:#10b981;background:#f0fdf4;color:#065f46}
+    .mm-icon{width:22px;height:22px;flex-shrink:0}
+
+    .msg{margin-top:14px;padding:12px 16px;border-radius:10px;font-size:.85rem;display:none}
+    .msg.error{background:#fef2f2;border:1px solid #fecaca;color:#dc2626}
+    .msg.success{background:#f0fdf4;border:1px solid #bbf7d0;color:#16a34a}
+    .msg.visible{display:block}
+
+    .footer-links{margin-top:28px;text-align:center;font-size:.82rem;color:var(--muted)}
+    .footer-links a{color:var(--teal);text-decoration:none;font-weight:600}
+    .footer-links p + p{margin-top:10px}
+
+    .loader{width:18px;height:18px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:none}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    @media(max-width:800px){
+      .page{grid-template-columns:1fr}
+      .left{display:none}
+      .right{padding:40px 28px}
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ── Left panel ──────────────────────────────────────────── -->
+  <div class="left">
+    <div class="mesh"></div>
+    <div class="brand">
+      <div class="brand-icon">🗳️</div>
+      UTAR SRC Voting System
+    </div>
+    <div class="left-mid">
+      <br><div class="left-tag">Blockchain-Secured Election</div>
+      <h1 class="left-title">Your Vote.<br><em>Your Voice.</em><br>Verified.</h1>
+      <p class="left-desc">
+        Every ballot is permanently recorded on the Ethereum blockchain —
+        tamper-proof, verifiable, and completely transparent.
+      </p>
+      <div class="features">
+        <div class="feat">
+          <div class="feat-icon">&#128274;</div>
+          End-to-end encrypted vote recording
+        </div>
+        <div class="feat">
+          <div class="feat-icon">&#9989;</div>
+          Independently verify your ballot anytime
+        </div>
+        <div class="feat">
+          <div class="feat-icon">&#127760;</div>
+          Vote remotely from any device
+        </div>
+        <div class="feat">
+          <div class="feat-icon">&#128202;</div>
+          Live transparent results on blockchain
+        </div>
+      </div>
+    </div>
+    <br><div class="left-footer">Universiti Tunku Abdul Rahman &middot; SRC Election System &middot; v4</div>
+  </div>
+
+  <!-- ── Right panel ─────────────────────────────────────────── -->
+  <div class="right">
+    <div class="form-header">
+      <h2 class="form-title">Student Sign In</h2>
+      <p class="form-sub">Enter your UTAR student credentials to access the voting portal.</p>
+    </div>
+
+    <div class="field">
+      <label for="studentId">Student ID</label>
+      <input type="text" id="studentId" placeholder="e.g. 2207492" autocomplete="username"/>
+    </div>
+
+    <div class="field">
+      <label for="password">Password</label>
+      <input type="password" id="password" placeholder="Enter your password" autocomplete="current-password"/>
+    </div>
+
+    <button class="btn btn-primary" id="loginBtn" onclick="handleLogin()">
+      <span id="loginText">Sign In</span>
+      <div class="loader" id="loginLoader"></div>
+    </button>
+
+    <div class="msg" id="msg"></div>
+
+    <div class="footer-links">
+      <p>Don't have an account? <a href="register.html">Register here</a></p>
+      <!-- v4: SRC Committee removed — only Election Committee uses eclogin.html -->
+      <p>Election Committee member? <a href="eclogin.html">EC portal &rarr;</a></p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  /* =============================================================
+     UTAR SRC Voting System — v4 Student Login
+     ─────────────────────────────────────────
+     Roles in v4:
+       'student'            → this page → vote.html
+       'election_committee' → eclogin.html → ec.html
+     SRC Committee role has been removed in v4.
+  ============================================================= */
+
+  let walletAddress = null;
+
+  /* ── Helpers ─────────────────────────────────────────────── */
+  function showMsg(text, type) {
+    const el = document.getElementById('msg');
+    el.textContent = text;
+    el.className = 'msg ' + type + ' visible';
+  }
+
+  function clearMsg() {
+    const el = document.getElementById('msg');
+    el.className = 'msg';
+    el.textContent = '';
+  }
+
+  function setLoading(on) {
+    document.getElementById('loginText').style.display  = on ? 'none'  : 'inline';
+    document.getElementById('loginLoader').style.display = on ? 'block' : 'none';
+    document.getElementById('loginBtn').disabled = on;
+  }
+
+  /* ── MetaMask: pre-connect wallet (optional before login) ─── */
+  async function connectMetaMask() {
+    if (!window.ethereum) {
+      showMsg(
+        'MetaMask not detected. Please install the MetaMask browser extension first.',
+        'error'
+      );
+      return;
+    }
+    try {
+      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      walletAddress  = accounts[0];
+      const short    = walletAddress.slice(0, 6) + '...' + walletAddress.slice(-4);
+      document.getElementById('mmBtnText').textContent = 'Connected: ' + short;
+      document.getElementById('mmBtn').classList.add('connected');
+      showMsg('Wallet connected: ' + short, 'success');
+    } catch (err) {
+      showMsg('MetaMask connection was rejected.', 'error');
+    }
+  }
+
+  /* ── Main login handler ──────────────────────────────────── */
+  async function handleLogin() {
+    clearMsg();
+
+    const student_id = document.getElementById('studentId').value.trim();
+    const password   = document.getElementById('password').value;
+
+    if (!student_id) { showMsg('Please enter your Student ID.', 'error'); return; }
+    if (!password)   { showMsg('Please enter your password.',   'error'); return; }
+
+    setLoading(true);
+
+    try {
+      const res = await fetch('/api/auth/login', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({
+          student_id,
+          password,
+          wallet_address: walletAddress,   // saved to DB if not already set
+        }),
+      });
+
+      const data = await res.json();
+
+      /* ── API error ─────────────────────────────────────── */
+      if (!res.ok) {
+        showMsg(data.error || 'Login failed. Please try again.', 'error');
+        return;
+      }
+
+      /* ── Wrong role guard ──────────────────────────────── */
+      /* v4: election_committee must use eclogin.html         */
+      if (data.user.role !== 'student') {
+        showMsg(
+          'This portal is for registered students only. ' +
+          'Election Committee members please use the EC portal.',
+          'error'
+        );
+        return;
+      }
+
+      /* ── Persist session ───────────────────────────────── */
+      sessionStorage.setItem('user', JSON.stringify(data.user));
+
+      /* ── First-login: force password change ────────────── */
+      if (data.mustChangePassword) {
+        sessionStorage.setItem('mustChangePassword', 'true');
+        window.location.href = 'change-password.html';
+        return;
+      }
+
+      /* ── Success: go to student portal ─────────────────── */
+      showMsg('Login successful! Redirecting...', 'success');
+      setTimeout(function() {
+        window.location.href = 'vote.html';
+      }, 800);
+
+    } catch (err) {
+      showMsg('Network error. Please check that the server is running on localhost:3000.', 'error');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  /* ── Keyboard shortcuts ──────────────────────────────────── */
+  document.getElementById('studentId').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') document.getElementById('password').focus();
+  });
+  document.getElementById('password').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') handleLogin();
+  });
+
+  /* ── Auto-detect already-connected MetaMask on page load ─── */
+  if (window.ethereum) {
+    window.ethereum.request({ method: 'eth_accounts' })
+      .then(function(accounts) {
+        if (accounts.length) {
+          walletAddress = accounts[0];
+          const short   = walletAddress.slice(0, 6) + '...' + walletAddress.slice(-4);
+          document.getElementById('mmBtnText').textContent = 'Connected: ' + short;
+          document.getElementById('mmBtn').classList.add('connected');
+        }
+      })
+      .catch(function() {});
+  }
+
+  /* ── Skip login if student session already exists ────────── */
+  (function checkExistingSession() {
+    try {
+      const stored = sessionStorage.getItem('user');
+      if (stored) {
+        const u = JSON.parse(stored);
+        if (u && u.role === 'student') {
+          window.location.href = 'vote.html';
+        }
+      }
+    } catch (_) {
+      sessionStorage.removeItem('user');
+    }
+  })();
+</script>
+</body>
+</html>

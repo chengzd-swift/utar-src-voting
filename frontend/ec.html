@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>UTAR SRC — Election Committee Panel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{--navy:#0b1628;--navy2:#112240;--teal:#00c2a8;--gold:#f5c842;--white:#f0f4ff;--muted:#8896b3;--red:#f87171;--green:#34d399;--border:rgba(0,194,168,.18);--card:rgba(17,34,64,.9)}
+    html,body{min-height:100%;background:var(--navy);font-family:'DM Sans',sans-serif;color:var(--white)}
+    body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,194,168,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,194,168,.04) 1px,transparent 1px);background-size:48px 48px;pointer-events:none;z-index:0}
+
+    nav{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:14px 40px;background:rgba(11,22,40,.92);border-bottom:1px solid var(--border);backdrop-filter:blur(12px)}
+    .nav-brand{font-family:'Syne',sans-serif;font-weight:700;font-size:.95rem;display:flex;align-items:center;gap:10px}
+    .nav-brand::before{content:'';width:28px;height:28px;border-radius:7px;background:linear-gradient(135deg,var(--gold),#d4a800);display:block}
+    .ec-badge{background:rgba(245,200,66,.12);border:1px solid rgba(245,200,66,.3);color:var(--gold);font-size:.7rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:3px 10px;border-radius:999px}
+    .btn-sm{padding:7px 14px;border-radius:8px;font-size:.8rem;font-family:'Syne',sans-serif;font-weight:600;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--white);transition:all .2s}
+    .btn-sm:hover{border-color:var(--teal);color:var(--teal)}
+
+    .layout{display:grid;grid-template-columns:230px 1fr;min-height:calc(100vh - 57px);position:relative;z-index:1}
+    .sidebar{border-right:1px solid var(--border);padding:24px 14px;background:rgba(11,22,40,.6);overflow-y:auto}
+    .sidebar-section{font-size:.65rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin:18px 0 8px;padding:0 10px}
+    .sidebar-link{display:flex;align-items:center;justify-content:space-between;padding:9px 10px;border-radius:9px;font-size:.87rem;cursor:pointer;color:var(--muted);transition:all .2s;margin-bottom:2px;border:none;background:transparent;width:100%;text-align:left}
+    .sidebar-link:hover,.sidebar-link.active{background:rgba(245,200,66,.07);color:var(--white)}
+    .sidebar-link.active{border-left:3px solid var(--gold)}
+    .badge-count{background:var(--red);color:#fff;font-size:.63rem;font-weight:700;padding:2px 7px;border-radius:999px;min-width:18px;text-align:center}
+    .content{padding:36px 40px;overflow-y:auto}
+
+    .section{display:none}.section.active{display:block;animation:fadeIn .25s ease}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}}
+    .section-title{font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:700;margin-bottom:4px}
+    .section-sub{color:var(--muted);font-size:.87rem;margin-bottom:24px}
+
+    .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
+    .stat-card{background:var(--card);border:1px solid var(--border);border-radius:13px;padding:16px 18px}
+    .stat-label{font-size:.7rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:5px}
+    .stat-value{font-family:'Syne',sans-serif;font-size:1.7rem;font-weight:700}
+
+    .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px;margin-bottom:20px}
+    .card-title{font-family:'Syne',sans-serif;font-size:.95rem;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+
+    .field{margin-bottom:14px}
+    .field label{display:block;font-size:.75rem;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+    .field input,.field select,.field textarea{width:100%;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:9px;padding:10px 13px;font-size:.9rem;color:var(--white);font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s}
+    .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--gold)}
+    .field textarea{resize:vertical;min-height:70px}
+    .field select option{background:#112240}
+    .form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .form-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+
+    .search-row{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+    .search-row input,.search-row select{background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:9px;padding:9px 13px;font-size:.87rem;color:var(--white);font-family:'DM Sans',sans-serif;outline:none;flex:1;min-width:160px}
+    .search-row input:focus,.search-row select:focus{border-color:var(--teal)}
+    .search-row select option{background:#112240}
+
+    /* Duration picker */
+    .duration-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+    .duration-box{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:11px;padding:14px;text-align:center}
+    .duration-box label{display:block;font-size:.7rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:8px}
+    .duration-box input{width:100%;background:transparent;border:none;font-family:'Syne',sans-serif;font-size:1.8rem;font-weight:700;color:var(--white);text-align:center;outline:none}
+    .duration-total{font-size:.8rem;color:var(--muted);margin-bottom:14px}
+    .duration-total strong{color:var(--teal)}
+
+    .btn{padding:10px 22px;border-radius:9px;font-family:'Syne',sans-serif;font-size:.87rem;font-weight:600;cursor:pointer;border:none;transition:all .2s}
+    .btn-gold{background:linear-gradient(135deg,var(--gold),#d4a800);color:var(--navy)}
+    .btn-gold:hover{transform:translateY(-1px);box-shadow:0 5px 18px rgba(245,200,66,.3)}
+    .btn-teal{background:linear-gradient(135deg,var(--teal),#009d87);color:var(--navy)}
+    .btn-teal:hover{transform:translateY(-1px);box-shadow:0 5px 18px rgba(0,194,168,.3)}
+    .btn-danger{background:rgba(248,113,113,.12);border:1px solid rgba(248,113,113,.3);color:var(--red)}
+    .btn-danger:hover{background:rgba(248,113,113,.2)}
+    .btn-approve{background:rgba(52,211,153,.12);border:1px solid rgba(52,211,153,.3);color:var(--green);padding:6px 13px;font-size:.78rem}
+    .btn-approve:hover{background:rgba(52,211,153,.22)}
+    .btn-reject{background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.25);color:var(--red);padding:6px 13px;font-size:.78rem}
+    .btn-reject:hover{background:rgba(248,113,113,.2)}
+    .btn-edit{background:rgba(245,200,66,.1);border:1px solid rgba(245,200,66,.2);color:var(--gold);padding:6px 13px;font-size:.78rem}
+    .btn-del{background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.2);color:var(--red);padding:6px 13px;font-size:.78rem}
+
+    .tag{display:inline-block;padding:3px 10px;border-radius:999px;font-size:.7rem;font-weight:600}
+    .tag-green{background:rgba(52,211,153,.15);color:var(--green)}
+    .tag-red{background:rgba(248,113,113,.12);color:var(--red)}
+    .tag-gold{background:rgba(245,200,66,.12);color:var(--gold)}
+    .tag-grey{background:rgba(136,150,179,.12);color:var(--muted)}
+    .tag-teal{background:rgba(0,194,168,.12);color:var(--teal)}
+
+    /* Nomination cards */
+    .nom-list{display:flex;flex-direction:column;gap:12px}
+    .nom-card{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:12px;padding:16px 20px}
+    .nom-card.pending{border-color:rgba(245,200,66,.25)}
+    .nom-card.approved{border-color:rgba(52,211,153,.25)}
+    .nom-card.rejected{border-color:rgba(248,113,113,.2);opacity:.7}
+    .nom-name{font-family:'Syne',sans-serif;font-weight:700;font-size:.95rem;margin-bottom:3px}
+    .nom-meta{font-size:.8rem;color:var(--muted);margin-bottom:10px}
+    .nom-manifesto{font-size:.82rem;color:#a0afcc;line-height:1.5;margin-bottom:12px;padding:8px 12px;background:rgba(255,255,255,.03);border-radius:7px;border-left:2px solid var(--border)}
+    .nom-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+
+    /* Pending student cards */
+    .pending-list{display:flex;flex-direction:column;gap:10px}
+    .pending-item{background:rgba(255,255,255,.03);border:1px solid rgba(248,113,113,.2);border-radius:11px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    .pending-info .name{font-weight:600;font-size:.9rem;margin-bottom:2px}
+    .pending-info .meta{font-size:.78rem;color:var(--muted)}
+    .pending-actions{display:flex;gap:8px}
+
+    .notice{padding:12px 16px;border-radius:11px;font-size:.83rem;margin-bottom:18px}
+    .notice-warn{background:rgba(245,200,66,.06);border:1px solid rgba(245,200,66,.2);color:#d4b84a}
+    .notice-info{background:rgba(0,194,168,.05);border:1px solid var(--border);color:var(--muted)}
+
+    /* Election cards */
+    .election-list{display:flex;flex-direction:column;gap:12px}
+    .election-item{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px 22px}
+    .election-item.active-el{border-color:rgba(0,194,168,.4)}
+    .el-header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+    .el-title{font-family:'Syne',sans-serif;font-weight:700;font-size:.95rem;margin-bottom:3px}
+    .el-meta{font-size:.8rem;color:var(--muted)}
+    .el-footer{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-top:13px;padding-top:13px;border-top:1px solid rgba(255,255,255,.05)}
+    .el-actions{display:flex;gap:7px;flex-wrap:wrap}
+
+    table{width:100%;border-collapse:collapse;font-size:.83rem}
+    thead tr{border-bottom:1px solid var(--border)}
+    th{text-align:left;padding:9px 13px;font-size:.69rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:500}
+    td{padding:11px 13px;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:middle}
+    tr:last-child td{border-bottom:none}
+    tr:hover td{background:rgba(255,255,255,.02)}
+
+    .toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--navy2);border:1px solid var(--border);border-radius:11px;padding:12px 22px;font-size:.88rem;z-index:999;transition:transform .3s ease;white-space:nowrap;box-shadow:0 8px 28px rgba(0,0,0,.4)}
+    .toast.show{transform:translateX(-50%) translateY(0)}
+    .toast.success{border-color:var(--teal);color:#00e5cc}
+    .toast.error{border-color:rgba(239,68,68,.4);color:#fca5a5}
+
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:200;display:none;align-items:center;justify-content:center}
+    .modal-overlay.open{display:flex}
+    .modal{background:var(--navy2);border:1px solid var(--border);border-radius:18px;padding:32px;width:100%;max-width:520px;animation:slideUp .3s ease;max-height:90vh;overflow-y:auto}
+    @keyframes slideUp{from{opacity:0;transform:translateY(16px)}}
+    .modal-title{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:700;margin-bottom:4px}
+    .modal-sub{color:var(--muted);font-size:.83rem;margin-bottom:22px}
+    .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px}
+    .btn-cancel{padding:9px 18px;border-radius:9px;font-family:'Syne',sans-serif;font-size:.85rem;font-weight:600;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted)}
+  </style>
+</head>
+<body>
+
+<nav>
+  <div style="display:flex;align-items:center;gap:12px">
+    <div class="nav-brand">UTAR SRC Voting</div>
+    <span class="ec-badge">Election Committee</span>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center">
+    <span style="font-size:.82rem;color:var(--muted)">👤 <strong id="navName" style="color:var(--white)">—</strong></span>
+    <button class="btn-sm" onclick="window.location.href='change-password.html'">🔑 Change PW</button>
+    <button class="btn-sm" onclick="window.location.href='results.html'">📊 Results</button>
+    <button class="btn-sm" onclick="logout()">Sign Out</button>
+  </div>
+</nav>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-section">Overview</div>
+    <button class="sidebar-link active" onclick="showSection('dashboard',this)"><span>📋 Dashboard</span></button>
+
+    <div class="sidebar-section">Student Management</div>
+    <button class="sidebar-link" onclick="showSection('pending',this)">
+      <span>⏳ Pending Approvals</span>
+      <span class="badge-count" id="pendingCount" style="display:none">0</span>
+    </button>
+    <button class="sidebar-link" onclick="showSection('students',this)"><span>👥 All Students</span></button>
+
+    <div class="sidebar-section">Election Management</div>
+    <button class="sidebar-link" onclick="showSection('elections',this)"><span>🗳️ Elections</span></button>
+    <button class="sidebar-link" onclick="showSection('nominations',this)">
+      <span>📝 Nominations</span>
+      <span class="badge-count" id="nomCount" style="display:none">0</span>
+    </button>
+    <button class="sidebar-link" onclick="showSection('candidates',this)"><span>👤 Candidates</span></button>
+    <button class="sidebar-link" onclick="showSection('voters',this)"><span>🗳️ Voter Registration</span></button>
+
+    <div class="sidebar-section">System</div>
+    <button class="sidebar-link" onclick="showSection('audit',this)"><span>📜 Audit Log</span></button>
+  </aside>
+
+  <div class="content">
+
+    <!-- Election selector (persistent) -->
+    <div id="electionSelectorBar" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:13px 18px;margin-bottom:22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+      <label style="font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);white-space:nowrap">Working on:</label>
+      <select id="electionSelect" onchange="onElectionChange()" style="flex:1;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:9px;padding:8px 13px;font-size:.9rem;color:var(--white);font-family:'DM Sans',sans-serif;outline:none;min-width:180px">
+        <option value="">— Select an election —</option>
+      </select>
+      <span id="elStatusPill" class="tag" style="display:none"></span>
+    </div>
+
+    <!-- ── DASHBOARD ──────────────────────────────────────── -->
+    <div id="section-dashboard" class="section active">
+      <h2 class="section-title">Dashboard</h2>
+      <p class="section-sub">Full overview of the UTAR SRC election system.</p>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-label">Pending Students</div><div class="stat-value" style="color:var(--red)" id="dashPending">—</div></div>
+        <div class="stat-card"><div class="stat-label">Pending Nominations</div><div class="stat-value" style="color:var(--gold)" id="dashNomPending">—</div></div>
+        <div class="stat-card"><div class="stat-label">Active Elections</div><div class="stat-value" style="color:var(--teal)" id="dashActive">—</div></div>
+        <div class="stat-card"><div class="stat-label">Total Students</div><div class="stat-value" id="dashStudents">—</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">📋 All Elections</div>
+        <div id="dashElList" style="color:var(--muted)">Loading...</div>
+      </div>
+      <div class="card">
+        <div class="card-title">ℹ️ Election Committee Authority (Reg 34)</div>
+        <div style="font-size:.85rem;color:var(--muted);line-height:1.7">
+          The Election Committee has sole authority to manage all aspects of the SRC election. The SRC Committee has been excluded from this system to prevent conflicts of interest — SRC members may stand for re-election and must not have administrative access to the voting platform.
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PENDING APPROVALS ──────────────────────────────── -->
+    <div id="section-pending" class="section">
+      <h2 class="section-title">Pending Student Approvals</h2>
+      <p class="section-sub">Review and approve student self-registrations before they can log in and vote.</p>
+      <div class="card">
+        <div class="card-title">⏳ Awaiting Approval</div>
+        <div class="pending-list" id="pendingList"><p style="color:var(--muted)">Loading...</p></div>
+      </div>
+    </div>
+
+    <!-- ── ALL STUDENTS ───────────────────────────────────── -->
+    <div id="section-students" class="section">
+      <h2 class="section-title">All Students</h2>
+      <p class="section-sub">Search and manage all approved student accounts. Link wallet addresses here.</p>
+      <div class="card">
+        <div class="search-row">
+          <input type="text" id="sSearch" placeholder="Search by ID, name, email, faculty..." oninput="loadStudents()"/>
+        </div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr><th>Student ID</th><th>Name</th><th>Faculty</th><th>Status</th><th>Wallet Address</th><th>Actions</th></tr></thead>
+            <tbody id="studentsTbody"><tr><td colspan="6" style="color:var(--muted)">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── ELECTIONS ──────────────────────────────────────── -->
+    <div id="section-elections" class="section">
+      <h2 class="section-title">Election Events</h2>
+      <p class="section-sub">Create and control all SRC election events. Edit and delete are locked once active.</p>
+      <div class="card">
+        <div class="card-title">➕ Create New Election</div>
+        <div class="form-row">
+          <div class="field"><label>Title</label><input type="text" id="elTitle" placeholder="e.g. SRC 2025/2026"/></div>
+          <div class="field"><label>Academic Year</label><input type="text" id="elYear" placeholder="e.g. 2025/2026"/></div>
+        </div>
+        <div class="field"><label>Description (optional)</label><textarea id="elDesc" placeholder="Brief description..."></textarea></div>
+        <button class="btn btn-gold" onclick="createElection()">Create Election on Blockchain</button>
+      </div>
+      <div class="card">
+        <div class="card-title">🔍 All Elections</div>
+        <div class="search-row">
+          <input type="text" id="elSearch" placeholder="Search title or year..." oninput="loadElections()"/>
+          <select id="elStatusFilter" onchange="loadElections()">
+            <option value="">All statuses</option>
+            <option value="setup">⚙️ Setup</option>
+            <option value="nomination">📝 Nominations open</option>
+            <option value="active">🟢 Active</option>
+            <option value="ended">🔴 Ended</option>
+          </select>
+        </div>
+        <div class="election-list" id="electionList"><p style="color:var(--muted)">Loading...</p></div>
+      </div>
+    </div>
+
+    <!-- ── NOMINATIONS ────────────────────────────────────── -->
+    <div id="section-nominations" class="section">
+      <h2 class="section-title">Nomination Review</h2>
+      <p class="section-sub">Review student self-nominations. Approving a nomination automatically adds the candidate to the blockchain.</p>
+      <div class="notice notice-info" id="nomElNotice">Please select an election above to view nominations.</div>
+      <div id="nomContent" style="display:none">
+        <div class="search-row">
+          <input type="text" id="nomSearch" placeholder="Search by name, student ID, or position..." oninput="loadNominations()"/>
+          <select id="nomStatusFilter" onchange="loadNominations()">
+            <option value="">All statuses</option>
+            <option value="pending">⏳ Pending</option>
+            <option value="approved">✅ Approved</option>
+            <option value="rejected">❌ Rejected</option>
+          </select>
+        </div>
+        <div class="nom-list" id="nomList"><p style="color:var(--muted)">Loading...</p></div>
+      </div>
+    </div>
+
+    <!-- ── CANDIDATES ─────────────────────────────────────── -->
+    <div id="section-candidates" class="section">
+      <h2 class="section-title">Candidates</h2>
+      <p class="section-sub">View and manage approved candidates. Edit and delete are locked once voting opens.</p>
+      <div class="notice notice-warn" id="candLockNotice" style="display:none">🔒 Voting is open or ended. Editing and deleting candidates is locked. Searching is still available.</div>
+      <div class="card">
+        <div class="search-row">
+          <input type="text" id="cSearch" placeholder="Search by name, position, faculty..." oninput="loadCandidates()"/>
+        </div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr><th>#</th><th>Name</th><th>Position</th><th>Faculty</th><th>Manifesto</th><th>Actions</th></tr></thead>
+            <tbody id="candidatesTbody"><tr><td colspan="6" style="color:var(--muted)">Select an election above.</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── VOTER REGISTRATION ─────────────────────────────── -->
+    <div id="section-voters" class="section">
+      <h2 class="section-title">Voter Registration</h2>
+      <p class="section-sub">Register eligible approved students on the blockchain for the selected election.</p>
+      <div class="notice notice-info">
+        💡 Ensure the student's wallet address is linked (via All Students) before registering them on the blockchain.
+      </div>
+      <div class="card">
+        <div class="card-title">➕ Register Voter on Blockchain</div>
+        <div id="voterElNotice" style="color:var(--muted);font-size:.88rem">Please select an election above first.</div>
+        <div id="voterForm" style="display:none">
+          <div class="form-row">
+            <div class="field"><label>Student ID</label><input type="text" id="vStudentId" placeholder="e.g. 2207492"/></div>
+            <div class="field"><label>Wallet Address</label><input type="text" id="vWallet" placeholder="0x..."/></div>
+          </div>
+          <button class="btn btn-teal" onclick="registerVoter()">Register on Blockchain</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── AUDIT LOG ──────────────────────────────────────── -->
+    <div id="section-audit" class="section">
+      <h2 class="section-title">Audit Log</h2>
+      <p class="section-sub">Complete audit trail of all system actions — students, nominations, elections, and voters.</p>
+      <div class="card">
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr><th>Time</th><th>Role</th><th>Election</th><th>Action</th><th>Description</th></tr></thead>
+            <tbody id="auditTbody"><tr><td colspan="5" style="color:var(--muted)">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Start Voting Modal -->
+<div class="modal-overlay" id="startModal">
+  <div class="modal">
+    <div class="modal-title">▶ Open Voting</div>
+    <div class="modal-sub" id="startModalSub">—</div>
+    <div class="duration-row">
+      <div class="duration-box"><label>Days</label><input type="number" id="durDays" value="0" min="0" oninput="updateTotal()"/><span style="font-size:.75rem;color:var(--muted)">days</span></div>
+      <div class="duration-box"><label>Minutes</label><input type="number" id="durMins" value="60" min="0" oninput="updateTotal()"/><span style="font-size:.75rem;color:var(--muted)">minutes</span></div>
+    </div>
+    <div class="duration-total" id="durTotal">Total: <strong>1 hour 0 minutes</strong></div>
+    <div class="notice notice-warn">⚠️ Ensure at least 2 candidates are approved and voters are registered before opening.</div>
+    <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn btn-teal" onclick="confirmStart()">Open Voting</button></div>
+  </div>
+</div>
+
+<!-- End Voting Modal -->
+<div class="modal-overlay" id="endModal">
+  <div class="modal">
+    <div class="modal-title">⏹ End Voting</div>
+    <div class="modal-sub" id="endModalSub">—</div>
+    <div class="notice notice-warn" style="background:rgba(248,113,113,.08);border-color:rgba(248,113,113,.25);color:#fca5a5">⚠️ This permanently closes voting. It cannot be undone.</div>
+    <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn btn-danger" onclick="confirmEnd()">Yes, End Voting</button></div>
+  </div>
+</div>
+
+<!-- Open Nominations Modal -->
+<div class="modal-overlay" id="nomModal">
+  <div class="modal">
+    <div class="modal-title">📝 Open Nomination Period</div>
+    <div class="modal-sub" id="nomModalSub">—</div>
+    <div class="field"><label>Nomination period (days)</label><input type="number" id="nomDays" value="7" min="1"/></div>
+    <div class="notice notice-info">Students will be able to submit nominations during this period.</div>
+    <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn btn-gold" onclick="confirmOpenNominations()">Open Nominations</button></div>
+  </div>
+</div>
+
+<!-- Edit Election Modal -->
+<div class="modal-overlay" id="editElModal">
+  <div class="modal">
+    <div class="modal-title">✏️ Edit Election</div>
+    <div class="modal-sub">Update election details. Locked once active.</div>
+    <input type="hidden" id="editElId"/>
+    <div class="field"><label>Title</label><input type="text" id="editElTitle"/></div>
+    <div class="field"><label>Academic Year</label><input type="text" id="editElYear"/></div>
+    <div class="field"><label>Description</label><textarea id="editElDesc"></textarea></div>
+    <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn btn-gold" onclick="confirmEditEl()">Save Changes</button></div>
+  </div>
+</div>
+
+<!-- Edit Candidate Modal -->
+<div class="modal-overlay" id="editCandModal">
+  <div class="modal">
+    <div class="modal-title">✏️ Edit Candidate</div>
+    <div class="modal-sub">Update candidate details.</div>
+    <input type="hidden" id="editCandId"/>
+    <div class="form-row">
+      <div class="field"><label>Full Name</label><input type="text" id="editCandName"/></div>
+      <div class="field"><label>Position</label><input type="text" id="editCandPos"/></div>
+    </div>
+    <div class="field"><label>Faculty</label><input type="text" id="editCandFaculty"/></div>
+    <div class="field"><label>Manifesto</label><textarea id="editCandManifesto"></textarea></div>
+    <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn btn-teal" onclick="confirmEditCand()">Save Changes</button></div>
+  </div>
+</div>
+
+<!-- Link Wallet Modal -->
+<div class="modal-overlay" id="walletModal">
+  <div class="modal">
+    <div class="modal-title">🔗 Link Wallet Address</div>
+    <div class="modal-sub" id="walletModalSub">—</div>
+    <input type="hidden" id="walletUserId"/>
+    <div class="field"><label>Wallet Address</label><input type="text" id="walletAddr" placeholder="0x..."/></div>
+    <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn btn-teal" onclick="confirmWallet()">Save Wallet</button></div>
+  </div>
+</div>
+
+<!-- Reject Nomination Modal -->
+<div class="modal-overlay" id="rejectNomModal">
+  <div class="modal">
+    <div class="modal-title">❌ Reject Nomination</div>
+    <div class="modal-sub" id="rejectNomSub">—</div>
+    <input type="hidden" id="rejectNomId"/>
+    <div class="field"><label>Reason for rejection (optional)</label><textarea id="rejectReason" placeholder="e.g. Does not meet eligibility requirements (Reg 4)..."></textarea></div>
+    <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn btn-danger" onclick="confirmRejectNom()">Reject Nomination</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const user = JSON.parse(sessionStorage.getItem('user') || 'null');
+  if (!user || user.role !== 'election_committee') window.location.href = 'eclogin.html';
+  document.getElementById('navName').textContent = user.full_name;
+
+  let elections=[], selectedElection=null, activeElId=null;
+
+  // ── Navigation ─────────────────────────────────────────────
+  function showSection(id, el) {
+    document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+    document.querySelectorAll('.sidebar-link').forEach(l=>l.classList.remove('active'));
+    document.getElementById(`section-${id}`).classList.add('active');
+    if (el) el.classList.add('active');
+    const selectorBar=document.getElementById('electionSelectorBar');
+    const needsEl=['nominations','candidates','voters'];
+    selectorBar.style.display = needsEl.includes(id) ? 'flex' : 'flex';
+    if (id==='dashboard')   loadDashboard();
+    if (id==='pending')     loadPending();
+    if (id==='students')    loadStudents();
+    if (id==='elections')   loadElections();
+    if (id==='nominations') loadNominations();
+    if (id==='candidates')  loadCandidates();
+    if (id==='voters')      checkVoterForm();
+    if (id==='audit')       loadAudit();
+  }
+
+  function toast(msg, type='success') {
+    const el=document.getElementById('toast');
+    el.textContent=msg; el.className=`toast ${type} show`;
+    setTimeout(()=>{el.className=`toast ${type}`;},3500);
+  }
+  function closeModal() { document.querySelectorAll('.modal-overlay').forEach(m=>m.classList.remove('open')); activeElId=null; }
+  document.querySelectorAll('.modal-overlay').forEach(m=>{ m.addEventListener('click',e=>{if(e.target===m)closeModal();}); });
+
+  function updateTotal() {
+    const days=parseInt(document.getElementById('durDays').value)||0;
+    const mins=parseInt(document.getElementById('durMins').value)||0;
+    const total=days*1440+mins;
+    const h=Math.floor(total/60), m=total%60;
+    let txt='';
+    if(days>0) txt+=`${days} day${days>1?'s':''} `;
+    if(h>0) txt+=`${h} hour${h>1?'s':''} `;
+    txt+=`${m} minute${m!==1?'s':''}`;
+    document.getElementById('durTotal').innerHTML=`Total: <strong>${txt||'0 minutes'}</strong> (${total} min)`;
+  }
+
+  // ── Election selector ──────────────────────────────────────
+  async function loadElectionSelector() {
+    const r=await fetch('/api/elections'); const d=await r.json();
+    elections=d.elections||[];
+    const sel=document.getElementById('electionSelect');
+    sel.innerHTML='<option value="">— Select an election —</option>'+
+      elections.map(e=>`<option value="${e.id}">${e.title} (${e.academic_year}) — ${e.status}</option>`).join('');
+  }
+
+  function onElectionChange() {
+    const id=document.getElementById('electionSelect').value;
+    selectedElection=elections.find(e=>e.id==id)||null;
+    const pill=document.getElementById('elStatusPill');
+    if (selectedElection) {
+      const map={setup:'⚙️ Setup',nomination:'📝 Nominations',active:'🟢 Active',ended:'🔴 Ended'};
+      pill.textContent=map[selectedElection.status]||selectedElection.status;
+      pill.className='tag '+(selectedElection.status==='active'?'tag-teal':selectedElection.status==='ended'?'tag-red':selectedElection.status==='nomination'?'tag-gold':'tag-grey');
+      pill.style.display='inline-block';
+    } else { pill.style.display='none'; }
+    const active=document.querySelector('.section.active');
+    if (active?.id==='section-nominations') loadNominations();
+    if (active?.id==='section-candidates')  loadCandidates();
+    if (active?.id==='section-voters')      checkVoterForm();
+  }
+
+  function isLocked() { return selectedElection&&(selectedElection.status==='active'||selectedElection.status==='ended'); }
+
+  // ── Dashboard ──────────────────────────────────────────────
+  async function loadDashboard() {
+    const [rp,rs,re]=await Promise.all([
+      fetch('/api/ec/pending-students').then(r=>r.json()),
+      fetch('/api/ec/students').then(r=>r.json()),
+      fetch('/api/elections').then(r=>r.json()),
+    ]);
+    const pending=(rp.pending||[]).length;
+    document.getElementById('dashPending').textContent=pending;
+    document.getElementById('dashStudents').textContent=(rs.students||[]).filter(s=>s.is_approved).length;
+    const els=re.elections||[];
+    document.getElementById('dashActive').textContent=els.filter(e=>e.status==='active').length;
+
+    // Pending nominations count
+    let nomPend=0;
+    for (const el of els) {
+      try { const r=await fetch(`/api/ec/elections/${el.id}/nominations?status=pending`); const d=await r.json(); nomPend+=(d.nominations||[]).length; } catch{}
+    }
+    document.getElementById('dashNomPending').textContent=nomPend;
+    updateSidebarBadges(pending, nomPend);
+
+    const list=document.getElementById('dashElList');
+    if (!els.length) { list.innerHTML='<p style="color:var(--muted)">No elections yet.</p>'; return; }
+    list.innerHTML=els.map(e=>`
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
+        <div><div style="font-weight:600;font-family:'Syne',sans-serif;font-size:.9rem">${e.title}</div><div style="font-size:.78rem;color:var(--muted)">${e.academic_year}</div></div>
+        <span class="tag ${e.status==='active'?'tag-teal':e.status==='ended'?'tag-red':e.status==='nomination'?'tag-gold':'tag-grey'}">${e.status}</span>
+      </div>`).join('');
+  }
+
+  function updateSidebarBadges(pending, nomPend) {
+    const pc=document.getElementById('pendingCount');
+    if (pending>0) { pc.textContent=pending; pc.style.display='inline-block'; } else { pc.style.display='none'; }
+    const nc=document.getElementById('nomCount');
+    if (nomPend>0) { nc.textContent=nomPend; nc.style.display='inline-block'; } else { nc.style.display='none'; }
+  }
+
+  // ── Pending students ───────────────────────────────────────
+  async function loadPending() {
+    const r=await fetch('/api/ec/pending-students'); const d=await r.json();
+    const list=document.getElementById('pendingList');
+    const pending=d.pending||[];
+    if (!pending.length) { list.innerHTML='<p style="color:var(--muted);text-align:center;padding:20px">✅ No pending registrations.</p>'; return; }
+    list.innerHTML=pending.map(u=>`
+      <div class="pending-item">
+        <div class="pending-info">
+          <div class="name">${u.full_name} <span style="font-size:.75rem;color:var(--muted)">(${u.student_id})</span></div>
+          <div class="meta">${u.email} · ${u.faculty}</div>
+          <div class="meta">Registered: ${new Date(u.created_at).toLocaleString('en-MY')}</div>
+        </div>
+        <div class="pending-actions">
+          <button class="btn btn-approve" onclick="approveStudent(${u.id})">✅ Approve</button>
+          <button class="btn btn-reject"  onclick="rejectStudent(${u.id})">❌ Reject</button>
+        </div>
+      </div>`).join('');
+  }
+
+  async function approveStudent(id) {
+    const r=await fetch(`/api/ec/students/${id}/approve`,{method:'POST'});
+    const d=await r.json();
+    if (!r.ok) { toast(d.error,'error'); return; }
+    toast('✅ Student approved!'); loadPending(); loadDashboard();
+  }
+  async function rejectStudent(id) {
+    if (!confirm('Reject and delete this registration?')) return;
+    const r=await fetch(`/api/ec/students/${id}`,{method:'DELETE'});
+    const d=await r.json();
+    if (!r.ok) { toast(d.error,'error'); return; }
+    toast('Registration rejected.'); loadPending(); loadDashboard();
+  }
+
+  // ── All students ───────────────────────────────────────────
+  async function loadStudents() {
+    const search=document.getElementById('sSearch')?.value||'';
+    let url='/api/ec/students?';
+    if (search) url+=`search=${encodeURIComponent(search)}`;
+    const r=await fetch(url); const d=await r.json();
+    const tb=document.getElementById('studentsTbody');
+    const students=(d.students||[]).filter(s=>s.is_approved);
+    if (!students.length) { tb.innerHTML='<tr><td colspan="6" style="color:var(--muted)">No approved students found.</td></tr>'; return; }
+    tb.innerHTML=students.map(s=>`
+      <tr>
+        <td>${s.student_id}</td>
+        <td>${s.full_name}</td>
+        <td style="font-size:.78rem;color:var(--muted)">${s.faculty}</td>
+        <td><span class="tag tag-teal">Approved</span></td>
+        <td style="font-family:monospace;font-size:.75rem;color:${s.wallet_address?'#00e5cc':'var(--muted)'}">
+          ${s.wallet_address||'— not linked —'}
+        </td>
+        <td><button class="btn btn-edit" onclick="openWalletModal(${s.id},'${s.full_name.replace(/'/g,"\\'")}','${s.wallet_address||''}')">🔗 Link Wallet</button></td>
+      </tr>`).join('');
+  }
+
+  function openWalletModal(userId, name, wallet) {
+    document.getElementById('walletUserId').value=userId;
+    document.getElementById('walletModalSub').textContent=`Set wallet for: ${name}`;
+    document.getElementById('walletAddr').value=wallet;
+    document.getElementById('walletModal').classList.add('open');
+  }
+  async function confirmWallet() {
+    const userId=document.getElementById('walletUserId').value;
+    const wallet=document.getElementById('walletAddr').value.trim();
+    if (!wallet) { toast('Wallet address required.','error'); return; }
+    const r=await fetch(`/api/ec/students/${userId}/wallet`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({wallet_address:wallet})});
+    const d=await r.json();
+    if (!r.ok) { toast(d.error,'error'); return; }
+    toast('✅ Wallet address saved!'); closeModal(); loadStudents();
+  }
+
+  // ── Elections ──────────────────────────────────────────────
+  async function loadElections() {
+    const search=document.getElementById('elSearch')?.value||'';
+    const status=document.getElementById('elStatusFilter')?.value||'';
+    let url='/api/elections?';
+    if (search) url+=`search=${encodeURIComponent(search)}&`;
+    if (status) url+=`status=${status}`;
+    const r=await fetch(url); const d=await r.json();
+    const els=d.elections||[];
+    const list=document.getElementById('electionList');
+    if (!els.length) { list.innerHTML='<p style="color:var(--muted)">No elections found.</p>'; return; }
+    list.innerHTML=els.map(e=>{
+      const locked=e.status==='active'||e.status==='ended';
+      const statusMap={setup:'⚙️ Setup',nomination:'📝 Nominations open',active:'🟢 Active',ended:'🔴 Ended'};
+      return `
+      <div class="election-item ${e.status==='active'?'active-el':''}">
+        <div class="el-header">
+          <div>
+            <div class="el-title">${e.title}</div>
+            <div class="el-meta">Academic Year: ${e.academic_year}${e.description?` · ${e.description}`:''}</div>
+          </div>
+          <span class="tag ${e.status==='active'?'tag-teal':e.status==='ended'?'tag-red':e.status==='nomination'?'tag-gold':'tag-grey'}">${statusMap[e.status]||e.status}</span>
+        </div>
+        <div class="el-footer">
+          <div class="el-actions">
+            ${e.status==='setup'?`
+              <button class="btn btn-edit" onclick="openEditEl(${e.id},'${e.title.replace(/'/g,"\\'")}','${e.academic_year}','${(e.description||'').replace(/'/g,"\\'")}')">✏️ Edit</button>
+              <button class="btn btn-danger" style="padding:6px 13px;font-size:.78rem" onclick="deleteEl(${e.id})">🗑️ Delete</button>
+              <button class="btn btn-gold" onclick="openNomModal(${e.id},'${e.title.replace(/'/g,"\\'")}')">📝 Open Nominations</button>
+            `:''} 
+            ${(e.status==='nomination'||e.status==='setup')?`<button class="btn btn-teal" onclick="openStartModal(${e.id},'${e.title.replace(/'/g,"\\'")}')">▶ Open Voting</button>`:''}
+            ${e.status==='active'?`<button class="btn btn-danger" onclick="openEndModal(${e.id},'${e.title.replace(/'/g,"\\'")}')">⏹ End Voting</button>`:''}
+            <button class="btn" style="background:rgba(255,255,255,.06);color:var(--white);border:1px solid var(--border)" onclick="window.location.href='results.html?election=${e.id}'">📊 Results</button>
+          </div>
+          ${locked?`<span style="font-size:.73rem;color:var(--muted)">🔒 ${e.status==='active'?'Voting in progress':'Election ended'}</span>`:''}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  async function createElection() {
+    const title=document.getElementById('elTitle').value.trim();
+    const year=document.getElementById('elYear').value.trim();
+    const desc=document.getElementById('elDesc').value.trim();
+    if (!title||!year) { toast('Title and academic year required.','error'); return; }
+    const r=await fetch('/api/ec/elections',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,academic_year:year,description:desc})});
+    const d=await r.json();
+    if (!r.ok) { toast(d.error,'error'); return; }
+    toast(`✅ "${title}" created!`);
+    ['elTitle','elYear','elDesc'].forEach(id=>document.getElementById(id).value='');
+    loadElections(); loadElectionSelector();
+  }
+
+  function openEditEl(id,title,year,desc) {
+    document.getElementById('editElId').value=id;
+    document.getElementById('editElTitle').value=title;
+    document.getElementById('editElYear').value=year;
+    document.getElementById('editElDesc').value=desc;
+    document.getElementById('editElModal').classList.add('open');
+  }
+  async function confirmEditEl() {
+    const id=document.getElementById('editElId').value;
+    const title=document.getElementById('editElTitle').value.trim();
+    const year=document.getElementById('editElYear').value.trim();
+    const desc=document.getElementById('editElDesc').value.trim();
+    const r=await fetch(`/api/ec/elections/${id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,academic_year:year,description:desc})});
+    const d=await r.json();
+    if (!r.ok) { toast(d.error,'error'); return; }
+    toast('✅ Election updated!'); closeModal(); loadElections(); loadElectionSelector();
+  }
+  async function deleteEl(id) {
+    if (!confirm('Delete this election and all its data? This cannot be undone.')) return;
+    const r=await fetch(`/api/ec/elections/${id}`,{method:'DELETE'});
+    const d=await r.json();
+    if (!r.ok) { toast(d.error,'error'); return; }
+    toast('🗑️ Election deleted.'); loadElections(); loadElectionSelector();
+  }
+
+  // ── Nominations ────────────────────────────────────────────
+  function openNomModal(id, title) {
+    activeElId=id;
+    document.getElementById('nomModalSub').textContent=`Opening nominations for: ${title}`;
+    document.getElementById('nomModal').classList.add('open');
+  }
+  async function confirmOpenNominations() {
+    const days=parseInt(document.getElementById('nomDays').value)||7;
+    const r=await fetch(`/api/ec/elections/${activeElId}/open-nominations`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nominationDays:days})});
+    const d=await r.json();
+    if (!r.ok) { toast(d.error,'error'); return; }
+    toast(`📝 Nominations open for ${days} days!`); closeModal(); loadElections(); loadElectionSelector();
+  }
+
+  async function loadNominations() {
+    const notice=document.getElementById('nomElNotice');
+    const content=document.getElementById('nomContent');
+    if (!selectedElection) { notice.style.display='block'; content.style.display='none'; return; }
+    notice.style.display='none'; content.style.display='block';
+    const search=document.getElementById('nomSearch')?.value||'';
+    const status=document.getElementById('nomStatusFilter')?.value||'';
+    let url=`/api/ec/elections/${selectedElection.id}/nominations?`;
+    if (search) url+=`search=${encodeURIComponent(search)}&`;
+    if (status) url+=`status=${status}`;
+    const r=await fetch(url); const d=await r.json();
+    const noms=d.nominations||[];
+    const list=document.getElementById('nomList');
+    if (!noms.length) { list.innerHTML='<p style="color:var(--muted)">No nominations found.</p>'; return; }
+    list.innerHTML=noms.map(n=>`
+      <div class="nom-card ${n.status}">
+        <div class="nom-name">${n.student_name} <span style="font-size:.75rem;color:var(--muted)">(${n.student_code})</span>
+          <span class="tag ${n.status==='pending'?'tag-gold':n.status==='approved'?'tag-green':'tag-red'}" style="margin-left:8px">${n.status}</span>
+        </div>
+        <div class="nom-meta">
+          Running for: <strong style="color:var(--white)">${n.position}</strong> · ${n.student_faculty}
+          ${n.proposer_name?`<br>Proposer: ${n.proposer_name} (${n.proposer_id||'—'}) · Seconder: ${n.seconder_name||'—'} (${n.seconder_id||'—'})`:''}
+        </div>
+        ${n.manifesto?`<div class="nom-manifesto">"${n.manifesto}"</div>`:''}
+        <div class="nom-footer">
+          <span style="font-size:.75rem;color:var(--muted)">Submitted: ${new Date(n.created_at).toLocaleString('en-MY')}</span>
+          <div style="display:flex;gap:8px">
+            ${n.status==='pending'?`
+              <button class="btn btn-approve" onclick="approveNomination(${n.id})">✅ Approve &amp; Add to Blockchain</button>
+              <button class="btn btn-reject"  onclick="openRejectModal(${n.id},'${n.student_name.replace(/'/g,"\\'")}')">❌ Reject</button>
+            `:''}
+            ${n.status==='rejected'&&n.rejection_reason?`<span style="font-size:.75rem;color:var(--red)">Reason: ${n.rejection_reason}</span>`:''}
+          </div>
+        </div>
+      </div>`).join('');
+  }
+
+  async function approveNomination(id) {
+    if (!confirm('Approve this nomination? The candidate will be automatically added to the blockchain.')) return;
+    const r=await fetch(`/api/ec/nominations/${id}/approve`,{method:'POST'});
+    const d=await r.json();
+    if (!r.ok) { toast(d.error,'error'); return; }
+    toast('✅ Nomination approved — candidate added to blockchain!'); loadNominations(); loadDashboard();
+  }
+
+  function openRejectModal(id, name) {
+    document.getElementById('rejectNomId').value=id;
+    document.getElementById('rejectNomSub').textContent=`Rejecting nomination from: ${name}`;
+    document.getElementById('rejectReason').value='';
+    document.getElementById('rejectNomModal').classList.add('open');
+  }
+  async function confirmRejectNom() {
+    const id=document.getElementById('rejectNomId').value;
+    const reason=document.getElementById('rejectReason').value.trim();
+    const r=await fetch(`/api/ec/nominations/${id}/reject`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({reason})});
+    const d=await r.json();
+    if (!r.ok) { toast(d.error,'error'); return; }
+    toast('Nomination rejected.'); closeModal(); loadNominations();
+  }
+
+  // ── Candidates ─────────────────────────────────────────────
+  async function loadCandidates() {
+    document.getElementById('candLockNotice').style.display=isLocked()?'block':'none';
+    if (!selectedElection) { document.getElementById('candidatesTbody').innerHTML='<tr><td colspan="6" style="color:var(--muted)">Select an election above.</td></tr>'; return; }
+    const search=document.getElementById('cSearch')?.value||'';
+    let url=`/api/elections/${selectedElection.id}/candidates?`;
+    if (search) url+=`search=${encodeURIComponent(search)}`;
+    const r=await fetch(url); const d=await r.json();
+    const tb=document.getElementById('candidatesTbody');
+    if (!d.candidates?.length) { tb.innerHTML='<tr><td colspan="6" style="color:var(--muted)">No candidates yet.</td></tr>'; return; }
+    tb.innerHTML=d.candidates.map(c=>`
+      <tr>
+        <td>${c.blockchain_id}</td>
+        <td style="font-weight:600">${c.full_name}</td>
+        <td>${c.position}</td>
+        <td style="font-size:.78rem;color:var(--muted)">${c.faculty}</td>
+        <td style="font-size:.78rem;color:#a0afcc;max-width:160px;overflow:hidden;text-overflow:ellipsis">${c.manifesto||'—'}</td>
+        <td>
+          ${!isLocked()?`
+            <button class="btn btn-edit" onclick="openEditCand(${c.id},'${c.full_name.replace(/'/g,"\\'")}','${c.position.replace(/'/g,"\\'")}','${c.faculty.replace(/'/g,"\\'")}','${(c.manifesto||'').replace(/'/g,"\\'")}')">✏️</button>
+            <button class="btn btn-danger" style="padding:6px 10px;font-size:.78rem" onclick="deleteCand(${c.id})">🗑️</button>
+          `:'<span style="font-size:.72rem;color:var(--muted)">Locked</span>'}
+        </td>
+      </tr>`).join('');
+  }
+
+  function openEditCand(id,name,pos,fac,man) {
+    document.getElementById('editCandId').value=id;
+    document.getElementById('editCandName').value=name;
+    document.getElementById('editCandPos').value=pos;
+    document.getElementById('editCandFaculty').value=fac;
+    document.getElementById('editCandManifesto').value=man;
+    document.getElementById('editCandModal').classList.add('open');
+  }
+  async function confirmEditCand() {
+    const id=document.getElementById('editCandId').value;
+    const full_name=document.getElementById('editCandName').value.trim();
+    const position=document.getElementById('editCandPos').value.trim();
+    const faculty=document.getElementById('editCandFaculty').value.trim();
+    const manifesto=document.getElementById('editCandManifesto').value.trim();
+    const r=await fetch(`/api/ec/elections/${selectedElection.id}/candidates/${id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({full_name,position,faculty,manifesto})});
+    const d=await r.json();
+    if (!r.ok) { toast(d.error,'error'); return; }
+    toast('✅ Candidate updated!'); closeModal(); loadCandidates();
+  }
+  async function deleteCand(id) {
+    if (!confirm('Delete this candidate?')) return;
+    const r=await fetch(`/api/ec/elections/${selectedElection.id}/candidates/${id}`,{method:'DELETE'});
+    const d=await r.json();
+    if (!r.ok) { toast(d.error,'error'); return; }
+    toast('🗑️ Candidate deleted.'); loadCandidates();
+  }
+
+  // ── Voter registration ─────────────────────────────────────
+  function checkVoterForm() {
+    document.getElementById('voterForm').style.display=selectedElection?'block':'none';
+    document.getElementById('voterElNotice').style.display=selectedElection?'none':'block';
+  }
+  async function registerVoter() {
+    if (!selectedElection) { toast('Select an election first.','error'); return; }
+    const sid=document.getElementById('vStudentId').value.trim();
+    const wallet=document.getElementById('vWallet').value.trim();
+    if (!sid||!wallet) { toast('Student ID and wallet required.','error'); return; }
+    const r=await fetch(`/api/ec/elections/${selectedElection.id}/register-voter`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({student_id:sid,wallet_address:wallet})});
+    const d=await r.json();
+    if (!r.ok) { toast(d.error,'error'); return; }
+    toast(`✅ ${sid} registered on blockchain!`);
+    document.getElementById('vStudentId').value='';
+    document.getElementById('vWallet').value='';
+  }
+
+  // ── Start/End voting ───────────────────────────────────────
+  function openStartModal(id, title) {
+    activeElId=id;
+    document.getElementById('startModalSub').textContent=`Election: ${title}`;
+    document.getElementById('durDays').value='0'; document.getElementById('durMins').value='60'; updateTotal();
+    document.getElementById('startModal').classList.add('open');
+  }
+  async function confirmStart() {
+    const days=parseInt(document.getElementById('durDays').value)||0;
+    const mins=parseInt(document.getElementById('durMins').value)||0;
+    const total=days*1440+mins;
+    if (total<1) { toast('Duration must be at least 1 minute.','error'); return; }
+    const r=await fetch(`/api/ec/elections/${activeElId}/start`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({durationMinutes:total})});
+    const d=await r.json();
+    if (!r.ok) { toast(d.error,'error'); return; }
+    toast(`🟢 Voting is OPEN! (${total} min)`); closeModal(); loadElections(); loadElectionSelector();
+  }
+
+  function openEndModal(id, title) {
+    activeElId=id;
+    document.getElementById('endModalSub').textContent=`Closing: "${title}"`;
+    document.getElementById('endModal').classList.add('open');
+  }
+  async function confirmEnd() {
+    const r=await fetch(`/api/ec/elections/${activeElId}/end`,{method:'POST'});
+    const d=await r.json();
+    if (!r.ok) { toast(d.error,'error'); return; }
+    toast('🔴 Voting closed.'); closeModal(); loadElections(); loadElectionSelector();
+  }
+
+  // ── Audit log ──────────────────────────────────────────────
+  async function loadAudit() {
+    const r=await fetch('/api/ec/audit'); const d=await r.json();
+    const tb=document.getElementById('auditTbody');
+    if (!d.logs?.length) { tb.innerHTML='<tr><td colspan="5" style="color:var(--muted)">No logs yet.</td></tr>'; return; }
+    tb.innerHTML=d.logs.map(l=>`
+      <tr>
+        <td style="font-size:.74rem;color:var(--muted)">${new Date(l.created_at).toLocaleString('en-MY')}</td>
+        <td><span class="tag ${l.role==='election_committee'?'tag-gold':'tag-teal'}">${l.role}</span></td>
+        <td style="font-size:.78rem">${l.election_id?`#${l.election_id}`:'—'}</td>
+        <td><span class="tag tag-grey">${l.action}</span></td>
+        <td style="font-size:.8rem">${l.description||'—'}</td>
+      </tr>`).join('');
+  }
+
+  function logout() { sessionStorage.clear(); window.location.href='eclogin.html'; }
+
+  // Init
+  loadElectionSelector().then(loadDashboard);
+  fetch('/api/ec/pending-students').then(r=>r.json()).then(d=>{
+    const n=(d.pending||[]).length;
+    const cnt=document.getElementById('pendingCount');
+    if (n>0) { cnt.textContent=n; cnt.style.display='inline-block'; }
+  });
+</script>
+</body>
+</html>
