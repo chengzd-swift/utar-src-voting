@@ -51,10 +51,13 @@
     .back{text-align:center;margin-top:24px;font-size:.82rem;color:var(--muted)}
     .back a{color:var(--teal);text-decoration:none;font-weight:600}
     @media(max-width:800px){.page{grid-template-columns:1fr}.left{display:none}.right{padding:40px 28px}}
+    [hidden]{display:none !important}
+
   </style>
 </head>
 <body>
-<div class="page">
+
+<div class="page" id="loginPage">
   <div class="left">
     <div class="mesh"></div>
     <div class="brand"><div class="brand-icon">🛡️</div>UTAR SRC Voting System</div>
@@ -115,6 +118,7 @@
 </div>
 
 <script>
+
   function showMsg(text) {
     const el=document.getElementById('msg');
     el.textContent=text; el.classList.add('visible');
@@ -139,6 +143,8 @@
         btn.disabled=false; btn.textContent='Sign In to Management Panel'; return;
       }
       sessionStorage.setItem('user', JSON.stringify(data.user));
+      // The panel presents this on every /api/ec/* request.
+      if (data.ecToken) sessionStorage.setItem('ecToken', data.ecToken);
       if (data.mustChangePassword) {
         sessionStorage.setItem('mustChangePassword','true');
         window.location.href='change-password.html'; return;

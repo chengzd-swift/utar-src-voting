@@ -27,9 +27,10 @@ contract SRCVoting {
 
     struct Voter {
         bool isRegistered;
-        bool hasVoted;
-        uint votedCandidateId;
+        bool hasVoted;          // has cast at least one ballot in this election
+        uint votedCandidateId;  // the most recent one (kept for the audit trail)
         uint votedAt;
+        uint votesCast;         // how many posts this voter has voted for
     }
 
     struct Election {
@@ -55,6 +56,13 @@ contract SRCVoting {
 
     // electionId => voterAddress => Voter
     mapping(uint => mapping(address => Voter)) public voters;
+
+    // The SRC is a council of ten posts under Reg 2(1), and a voter
+    // casts one ballot for each of them — not one ballot overall. The
+    // post is keyed by the hash of its name, which is what the
+    // candidate already carries.
+    // electionId => voter => keccak256(position) => voted
+    mapping(uint => mapping(address => mapping(bytes32 => bool))) public votedForPost;
 
     // ─────────────────────────────────────────────────────────────
     //  Events
@@ -153,7 +161,8 @@ contract SRCVoting {
             isRegistered: true,
             hasVoted: false,
             votedCandidateId: 0,
-            votedAt: 0
+            votedAt: 0,
+            votesCast: 0
         });
 
         emit VoterRegistered(_electionId, _voter);
@@ -170,7 +179,8 @@ contract SRCVoting {
                     isRegistered: true,
                     hasVoted: false,
                     votedCandidateId: 0,
-                    votedAt: 0
+                    votedAt: 0,
+                    votesCast: 0
                 });
                 emit VoterRegistered(_electionId, v);
             }
@@ -214,7 +224,9 @@ contract SRCVoting {
     //  Voter Functions
     // ─────────────────────────────────────────────────────────────
 
-    /// @notice Cast a vote in a specific election
+    /// @notice Cast a vote for one post in a specific election.
+    /// @dev One ballot per post per voter, so a voter helps elect the
+    ///      whole council rather than a single office holder.
     function vote(uint _electionId, uint _candidateId)
         external
         electionExists(_electionId)
@@ -224,18 +236,47 @@ contract SRCVoting {
         Election storage e  = elections[_electionId];
 
         require(voter.isRegistered, "SRCVoting: voter not registered for this election");
-        require(!voter.hasVoted, "SRCVoting: already voted");
         require(_candidateId > 0 && _candidateId <= e.candidateCount, "SRCVoting: invalid candidate");
         require(candidates[_electionId][_candidateId].exists, "SRCVoting: candidate not found");
 
-        voter.hasVoted        = true;
+        bytes32 post = keccak256(bytes(candidates[_electionId][_candidateId].position));
+        require(!votedForPost[_electionId][msg.sender][post], "SRCVoting: already voted for this post");
+
+        votedForPost[_electionId][msg.sender][post] = true;
+
+        voter.hasVoted         = true;
         voter.votedCandidateId = _candidateId;
-        voter.votedAt         = block.timestamp;
+        voter.votedAt          = block.timestamp;
+        voter.votesCast++;
 
         candidates[_electionId][_candidateId].voteCount++;
         e.totalVotesCast++;
 
         emit VoteCast(_electionId, msg.sender, _candidateId, block.timestamp);
+    }
+
+    /// @notice Has this voter already voted for the given post?
+    function hasVotedForPost(uint _electionId, address _voter, string calldata _position)
+        external view returns (bool)
+    {
+        return votedForPost[_electionId][_voter][keccak256(bytes(_position))];
+    }
+
+    /// @notice The posts this voter has already used their ballot on.
+    /// @dev Mirrors the candidate list, so the caller can mark each post
+    ///      as done without a round trip per post.
+    function getVotedPosts(uint _electionId, address _voter)
+        external view returns (uint[] memory candidateIds, bool[] memory voted)
+    {
+        uint count = elections[_electionId].candidateCount;
+        candidateIds = new uint[](count);
+        voted        = new bool[](count);
+        for (uint i = 1; i <= count; i++) {
+            candidateIds[i-1] = i;
+            voted[i-1] = votedForPost[_electionId][_voter][
+                keccak256(bytes(candidates[_electionId][i].position))
+            ];
+        }
     }
 
     // ─────────────────────────────────────────────────────────────

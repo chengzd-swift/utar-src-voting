@@ -20,7 +20,15 @@ async function main() {
   console.log(`✅ SRCVoting v4 deployed to: ${address}`);
 
   const artifact   = await hre.artifacts.readArtifact("SRCVoting");
-  const deployInfo = { address, abi: artifact.abi, network: hre.network.name, deployedAt: new Date().toISOString() };
+  // chainId lets the student portal check that MetaMask is pointed at
+  // this chain before it sends a vote. Without it, a wallet left on
+  // Mainnet fails with an unreadable "Internal JSON-RPC error".
+  const { chainId } = await hre.ethers.provider.getNetwork();
+  const deployInfo = {
+    address, abi: artifact.abi,
+    network: hre.network.name, chainId: Number(chainId),
+    deployedAt: new Date().toISOString(),
+  };
 
   const backendPath  = path.join(__dirname, "../backend/contract.json");
   const frontendPath = path.join(__dirname, "../frontend/contract.json");

@@ -6,6 +6,7 @@
   <title>UTAR SRC — Election Committee Panel</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     :root{--navy:#0b1628;--navy2:#112240;--teal:#00c2a8;--gold:#f5c842;--white:#f0f4ff;--muted:#8896b3;--red:#f87171;--green:#34d399;--border:rgba(0,194,168,.18);--card:rgba(17,34,64,.9)}
@@ -46,14 +47,18 @@
     .field input,.field select,.field textarea{width:100%;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:9px;padding:10px 13px;font-size:.9rem;color:var(--white);font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s}
     .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--gold)}
     .field textarea{resize:vertical;min-height:70px}
-    .field select option{background:#112240}
+    /* The dropdown list itself is drawn by the OS, not the page, so it
+       ignores the dark colours set on the <select> and falls back to a
+       white list — light text on white, invisible until hovered. Every
+       <option> needs its own colours, so this is set once for all of
+       them rather than per component. */
+    select option{background:#112240;color:#f0f4ff}
     .form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
     .form-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
 
     .search-row{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap}
     .search-row input,.search-row select{background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:9px;padding:9px 13px;font-size:.87rem;color:var(--white);font-family:'DM Sans',sans-serif;outline:none;flex:1;min-width:160px}
     .search-row input:focus,.search-row select:focus{border-color:var(--teal)}
-    .search-row select option{background:#112240}
 
     /* Duration picker */
     .duration-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
@@ -136,6 +141,36 @@
     .modal-sub{color:var(--muted);font-size:.83rem;margin-bottom:22px}
     .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px}
     .btn-cancel{padding:9px 18px;border-radius:9px;font-family:'Syne',sans-serif;font-size:.85rem;font-weight:600;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted)}
+
+    /* ── v5: voter registration statistics ───────────────── */
+    .stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:12px;margin-bottom:18px}
+    .stat{border:1px solid var(--border);border-radius:11px;padding:14px 16px;background:rgba(11,22,40,.4)}
+    .stat .n{font-family:'Syne',sans-serif;font-size:1.6rem;font-weight:800;line-height:1.1}
+    .stat .l{font-size:.74rem;color:var(--muted);margin-top:4px;line-height:1.4}
+    .stat.good .n{color:var(--green)} .stat.warn .n{color:var(--gold)} .stat.bad .n{color:var(--red)}
+
+    /* ── v5: endorsement evidence ────────────────────────── */
+    .end-box{margin:14px 0;padding:14px;border:1px solid var(--border);border-radius:11px;background:rgba(11,22,40,.35)}
+    .end-head{font-size:.76rem;font-weight:600;color:var(--muted);margin-bottom:8px;letter-spacing:.03em}
+    .end-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid rgba(0,194,168,.08);font-size:.82rem;flex-wrap:wrap}
+    .end-row:last-child{border-bottom:none}
+    .end-who{font-weight:600}
+    .end-proof{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.69rem;color:var(--muted);margin-top:3px;word-break:break-all}
+
+    /* ── v5: batch log and CSV box ───────────────────────── */
+    .campus-pill{font-size:.72rem;font-weight:700;padding:4px 12px;border-radius:999px;background:var(--campus-bg,rgba(245,200,66,.12));color:var(--campus-c,var(--gold));border:1px solid var(--campus-bd,rgba(245,200,66,.3))}
+    .step-row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+    .step-arrow{color:var(--muted);font-size:1.1rem}
+    .step-note{color:var(--muted);font-size:.8rem;line-height:1.6;max-width:70ch;margin-top:14px}
+    .inline-num{width:74px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:7px;padding:4px 8px;font-size:.8rem;color:var(--white);font-family:'DM Sans',sans-serif;outline:none}
+    .inline-num:focus{border-color:var(--gold)}
+    .btn:disabled{opacity:.4;cursor:not-allowed}
+    .details-card > summary{font-family:'Syne',sans-serif;font-size:.95rem;font-weight:700;cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px}
+    .details-card > summary::-webkit-details-marker{display:none}
+    .details-card > summary::after{content:'▸';margin-left:auto;color:var(--muted);transition:transform .2s}
+    .details-card[open] > summary::after{transform:rotate(90deg)}
+    .batch-log{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.73rem;line-height:1.7;background:rgba(11,22,40,.75);border:1px solid var(--border);border-radius:9px;padding:13px;margin-top:14px;max-height:250px;overflow:auto;white-space:pre-wrap;word-break:break-all}
+    textarea.csv:focus{border-color:var(--gold)}
   </style>
 </head>
 <body>
@@ -144,9 +179,11 @@
   <div style="display:flex;align-items:center;gap:12px">
     <div class="nav-brand">UTAR SRC Voting</div>
     <span class="ec-badge">Election Committee</span>
+    <span class="campus-pill" id="navCampus">📍 Kampar Campus</span>
   </div>
   <div style="display:flex;gap:8px;align-items:center">
     <span style="font-size:.82rem;color:var(--muted)">👤 <strong id="navName" style="color:var(--white)">—</strong></span>
+    <button class="btn-sm" onclick="switchCampus()">🔄 Switch campus</button>
     <button class="btn-sm" onclick="window.location.href='change-password.html'">🔑 Change PW</button>
     <button class="btn-sm" onclick="window.location.href='results.html'">📊 Results</button>
     <button class="btn-sm" onclick="logout()">Sign Out</button>
@@ -164,6 +201,11 @@
       <span class="badge-count" id="pendingCount" style="display:none">0</span>
     </button>
     <button class="sidebar-link" onclick="showSection('students',this)"><span>👥 All Students</span></button>
+    <button class="sidebar-link" onclick="showSection('roster',this)"><span>📇 Student Roster</span></button>
+    <button class="sidebar-link" onclick="showSection('changes',this)">
+      <span>✏️ Profile Changes</span>
+      <span class="badge-count" id="changeCount" style="display:none">0</span>
+    </button>
 
     <div class="sidebar-section">Election Management</div>
     <button class="sidebar-link" onclick="showSection('elections',this)"><span>🗳️ Elections</span></button>
@@ -175,6 +217,7 @@
     <button class="sidebar-link" onclick="showSection('voters',this)"><span>🗳️ Voter Registration</span></button>
 
     <div class="sidebar-section">System</div>
+    <button class="sidebar-link" onclick="showSection('chatbot',this)"><span>🤖 AI Assistant</span></button>
     <button class="sidebar-link" onclick="showSection('audit',this)"><span>📜 Audit Log</span></button>
   </aside>
 
@@ -224,14 +267,14 @@
     <!-- ── ALL STUDENTS ───────────────────────────────────── -->
     <div id="section-students" class="section">
       <h2 class="section-title">All Students</h2>
-      <p class="section-sub">Search and manage all approved student accounts. Link wallet addresses here.</p>
+      <p class="section-sub">All approved student accounts. Wallets marked <em>Signature verified</em> were proved by the student signing a challenge with their own MetaMask key. Use Override only for a student who cannot use MetaMask.</p>
       <div class="card">
         <div class="search-row">
           <input type="text" id="sSearch" placeholder="Search by ID, name, email, faculty..." oninput="loadStudents()"/>
         </div>
         <div style="overflow-x:auto">
           <table>
-            <thead><tr><th>Student ID</th><th>Name</th><th>Faculty</th><th>Status</th><th>Wallet Address</th><th>Actions</th></tr></thead>
+            <thead><tr><th>Student ID</th><th>Name</th><th>Campus</th><th>Faculty</th><th>Wallet Address</th><th>Actions</th></tr></thead>
             <tbody id="studentsTbody"><tr><td colspan="6" style="color:var(--muted)">Loading...</td></tr></tbody>
           </table>
         </div>
@@ -247,6 +290,24 @@
         <div class="form-row">
           <div class="field"><label>Title</label><input type="text" id="elTitle" placeholder="e.g. SRC 2025/2026"/></div>
           <div class="field"><label>Academic Year</label><input type="text" id="elYear" placeholder="e.g. 2025/2026"/></div>
+        </div>
+        <div class="form-row">
+          <div class="field">
+            <label>Campus (Reg 2(1))</label>
+            <select id="elCampus">
+              <option value="Kampar">Kampar</option>
+              <option value="Sungai Long">Sungai Long</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Polling day</label>
+            <input type="date" id="elPolling"/>
+          </div>
+        </div>
+        <div class="notice notice-info" style="margin-bottom:14px">
+          The campus decides which students are queued as voters. The polling day
+          enforces the Reg 21 rule that a nominee cannot withdraw within three days
+          of it.
         </div>
         <div class="field"><label>Description (optional)</label><textarea id="elDesc" placeholder="Brief description..."></textarea></div>
         <button class="btn btn-gold" onclick="createElection()">Create Election on Blockchain</button>
@@ -270,16 +331,18 @@
     <!-- ── NOMINATIONS ────────────────────────────────────── -->
     <div id="section-nominations" class="section">
       <h2 class="section-title">Nomination Review</h2>
-      <p class="section-sub">Review student self-nominations. Approving a nomination automatically adds the candidate to the blockchain.</p>
+      <p class="section-sub">Review student self-nominations. A nomination only reaches you once all four endorsers required by Reg 20(1) have confirmed from their own accounts. Approving adds the candidate to the blockchain.</p>
       <div class="notice notice-info" id="nomElNotice">Please select an election above to view nominations.</div>
       <div id="nomContent" style="display:none">
         <div class="search-row">
           <input type="text" id="nomSearch" placeholder="Search by name, student ID, or position..." oninput="loadNominations()"/>
           <select id="nomStatusFilter" onchange="loadNominations()">
             <option value="">All statuses</option>
-            <option value="pending">⏳ Pending</option>
+            <option value="awaiting_endorsement">🤝 Awaiting endorsements</option>
+            <option value="pending">⏳ Ready for review</option>
             <option value="approved">✅ Approved</option>
             <option value="rejected">❌ Rejected</option>
+            <option value="withdrawn">↩️ Withdrawn</option>
           </select>
         </div>
         <div class="nom-list" id="nomList"><p style="color:var(--muted)">Loading...</p></div>
@@ -304,22 +367,243 @@
       </div>
     </div>
 
-    <!-- ── VOTER REGISTRATION ─────────────────────────────── -->
+    <!-- ── VOTER REGISTRATION (v5) ────────────────────────── -->
     <div id="section-voters" class="section">
       <h2 class="section-title">Voter Registration</h2>
-      <p class="section-sub">Register eligible approved students on the blockchain for the selected election.</p>
-      <div class="notice notice-info">
-        💡 Ensure the student's wallet address is linked (via All Students) before registering them on the blockchain.
-      </div>
-      <div class="card">
-        <div class="card-title">➕ Register Voter on Blockchain</div>
-        <div id="voterElNotice" style="color:var(--muted);font-size:.88rem">Please select an election above first.</div>
-        <div id="voterForm" style="display:none">
+      <p class="section-sub">
+        Students link and prove their own wallets when they register, so there is
+        nothing to type here. Queue the eligible voters for this campus, then send
+        them to the blockchain in batches.
+      </p>
+
+      <div id="voterElNotice" class="notice notice-info">Please select an election above first.</div>
+
+      <div id="voterPanel" style="display:none">
+        <div class="stat-row" id="voterStats"></div>
+
+        <div class="card">
+          <div class="card-title">⚡ Register everyone at once</div>
+
+          <!-- The two buttons on their own never said which one was due
+               next, so this line reads the counts above and says it. -->
+          <div class="notice notice-info" id="voterNextStep" style="margin-bottom:18px"></div>
+
+          <div class="step-row">
+            <button class="btn btn-gold" id="btnQueue" onclick="queueVoters()">1 · Queue eligible voters</button>
+            <span class="step-arrow">→</span>
+            <button class="btn btn-teal" id="btnRegister" onclick="registerBatch()">2 · Send to blockchain</button>
+          </div>
+
+          <p class="step-note">
+            <strong>Step 1</strong> gathers everyone on this campus who is allowed to
+            vote under Reg 14(1) and has confirmed their own wallet — it only makes a
+            list, nothing is sent yet.<br><br>
+            <strong>Step 2</strong> writes that list onto the blockchain, which is
+            what actually lets them vote.
+          </p>
+
+          <div class="step-note" style="margin-top:10px">
+            <br>Register
+            <input type="number" id="chunkSize" value="100" min="1" max="250" class="inline-num"/>
+            students at a time.
+            <span style="display:block;margin-top:5px">
+              Students are registered 100 at a time instead of one by one, 
+              which saves transactions rather than fees. Lower this only if a group fails.
+            </span>
+          </div>
+
+          <div class="batch-log" id="batchLog" style="display:none"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">📋 Registration status by student</div>
+          <div class="search-row">
+            <input type="text" id="vSearch" placeholder="Search by student ID or name..." oninput="loadVoterList()"/>
+            <select id="vStatusFilter" onchange="loadVoterList()">
+              <option value="">All statuses</option>
+              <option value="registered">On the blockchain</option>
+              <option value="queued">Queued</option>
+              <option value="failed">Failed</option>
+              <option value="superseded">Released</option>
+            </select>
+          </div>
+          <div style="overflow-x:auto">
+            <table>
+              <thead><tr><th>Student ID</th><th>Name</th><th>Wallet</th><th>Status</th><th>Transaction / note</th><th></th></tr></thead>
+              <tbody id="votersTbody"><tr><td colspan="6" style="color:var(--muted)">Nothing queued yet.</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- The exception path. Collapsed so it stops competing with the
+             everyday flow above. -->
+        <details class="card details-card">
+          <summary>🛠️ Manual override — for a student who cannot use MetaMask</summary>
+          <p style="color:var(--muted);font-size:.85rem;line-height:1.6;margin:14px 0;max-width:66ch">
+            For a student who has come to the DSA counter in person. This path skips
+            the ownership proof, so every use is written to the audit log.
+          </p>
           <div class="form-row">
             <div class="field"><label>Student ID</label><input type="text" id="vStudentId" placeholder="e.g. 2207492"/></div>
             <div class="field"><label>Wallet Address</label><input type="text" id="vWallet" placeholder="0x..."/></div>
           </div>
-          <button class="btn btn-teal" onclick="registerVoter()">Register on Blockchain</button>
+          <button class="btn btn-danger" onclick="registerVoter()">Register this one student</button>
+        </details>
+      </div>
+    </div>
+
+    <!-- ── STUDENT ROSTER (v5) ────────────────────────────── -->
+    <div id="section-roster" class="section">
+      <h2 class="section-title">Student Roster</h2>
+      <p class="section-sub">
+        The Department of Student Affairs export. Registrations are matched against
+        it and verified automatically, so approval scales with the number of
+        exceptions rather than the number of students.
+      </p>
+      <div class="card">
+        <div class="card-title">📥 Import Roster (.xlsx)</div>
+        <p style="color:var(--muted);font-size:.84rem;line-height:1.65;margin-bottom:12px;max-width:70ch">
+          Upload the DSA export as an Excel spreadsheet. First row is the header. Required: <code>student_id, full_name, email, faculty, campus</code>.
+          Optional Reg 4 and Reg 14 columns: <code>study_level, is_international, delivery_mode,
+          sat_first_exam, trimesters_left, on_leave, academic_probation, criminal_offence,
+          disciplinary_guilty, disciplinary_open, fees_in_arrears, president_waiver, deemed_unfit</code>.
+          Re-importing updates students who are already on the roster.
+        </p>
+        <input type="file" id="rosterFile" accept=".xlsx,.xls" style="color:var(--muted);font-size:.85rem">
+        <div id="rosterPreview" style="color:var(--teal);font-size:.82rem;margin-top:10px"></div>
+        <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
+          <button class="btn btn-gold" onclick="importRoster()">Import roster</button>
+          <button class="btn btn-teal" onclick="reconcileRoster()">Re-check pending accounts</button>
+        </div>
+        <div class="batch-log" id="rosterLog" style="display:none"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🕘 Import history</div>
+        <p style="color:var(--muted);font-size:.84rem;line-height:1.6;margin-bottom:14px;max-width:70ch">
+          Every roster row remembers which import last wrote it, so this is what
+          each upload actually left behind. Re-importing a student moves them to
+          the newer import.
+        </p>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr><th>File / batch</th><th>Imported</th><th>Students</th><th>Kampar</th><th>Sungai Long</th></tr></thead>
+            <tbody id="rosterHistoryTbody"><tr><td colspan="5" style="color:var(--muted)">Loading…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PROFILE CHANGES (v5) ───────────────────────────── -->
+    <div id="section-changes" class="section">
+      <h2 class="section-title">Profile Changes</h2>
+      <p class="section-sub">
+        Students correct their own details. Contact details save on their own; a
+        change to a name, email, faculty or campus on a verified account lands here
+        first, so your earlier verification is never quietly overwritten.
+      </p>
+      <div class="card">
+        <div class="pending-list" id="changeList"><p style="color:var(--muted)">Loading...</p></div>
+      </div>
+    </div>
+
+    <!-- ── AI ASSISTANT (v5) ──────────────────────────────── -->
+    <div id="section-chatbot" class="section">
+      <h2 class="section-title">AI Assistant</h2>
+      <p class="section-sub">
+        The election assistant students see on every page. Only the Election Committee
+        can configure it. The API key is stored encrypted and is never sent to a
+        student's browser — questions go to this server, and this server talks to the
+        provider.
+      </p>
+
+      <div class="stat-row" id="botStats"></div>
+
+      <div class="card">
+        <div class="card-title">🔌 Provider</div>
+        <div class="form-row-3">
+          <div class="field">
+            <label>Provider</label>
+            <select id="botProvider" onchange="onBotProviderChange()"></select>
+          </div>
+          <div class="field">
+            <label>Model</label>
+            <input type="text" id="botModel" placeholder="gemini-2.0-flash"/>
+          </div>
+          <div class="field">
+            <label>Assistant</label>
+            <select id="botEnabled">
+              <option value="1">On — students can ask questions</option>
+              <option value="0">Off — refer everyone to the DSA</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label>API key</label>
+          <input type="password" id="botKey" placeholder="Paste a new key to replace the stored one"/>
+          <div class="hint" id="botKeyHint">Leave blank to keep the key already saved.</div>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px">
+          <button class="btn btn-gold" onclick="saveBotConfig()">Save settings</button>
+          <button class="btn btn-teal" onclick="testBot()">Test connection</button>
+        </div>
+        <div class="batch-log" id="botTestLog" style="display:none"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🎛️ Model behaviour</div>
+        <p class="step-note" style="margin-top:0">
+          Lower temperature keeps answers close to the regulations. This assistant
+          quotes rules rather than brainstorming, so 0.2–0.4 suits it. Top-k applies
+          to Google models only.
+        </p>
+        <div class="form-row-3" style="margin-top:14px">
+          <div class="field">
+            <label>Temperature <span id="tempVal" style="color:var(--gold)">0.3</span></label>
+            <input type="range" id="botTemp" min="0" max="1.5" step="0.05" value="0.3"
+                   oninput="document.getElementById('tempVal').textContent=this.value"/>
+            <div class="hint"><strong>How much it varies its wording.</strong> At 0 the same question gets
+              almost the same answer every time; at 1.5 it rephrases freely and starts paraphrasing rules
+              loosely. <em>Keep it 0.2–0.4 — this assistant quotes regulations.</em></div>
+          </div>
+          <div class="field">
+            <label>Top-p <span id="toppVal" style="color:var(--gold)">0.9</span></label>
+            <input type="range" id="botTopP" min="0.1" max="1" step="0.05" value="0.9"
+                   oninput="document.getElementById('toppVal').textContent=this.value"/>
+            <div class="hint"><strong>How wide a pool of words it picks from.</strong> 0.9 keeps the most
+              likely 90% and ignores the odd tail. <em>Leave at 0.9 — adjust temperature or this, not both.</em></div>
+          </div>
+          <div class="field">
+            <label>Top-k <span id="topkVal" style="color:var(--gold)">40</span></label>
+            <input type="range" id="botTopK" min="1" max="100" step="1" value="40"
+                   oninput="document.getElementById('topkVal').textContent=this.value"/>
+            <div class="hint"><strong>A hard cap on that pool: at most 40 candidate words.</strong>
+              <em>Google models only — OpenAI and OpenRouter ignore it.</em></div>
+          </div>
+        </div>
+        <div class="field" style="max-width:340px">
+          <label>Maximum reply length (tokens)</label>
+          <input type="number" id="botMaxTokens" min="64" max="4000" step="32" value="700"/>
+          <div class="hint"><strong>Where the answer gets cut off.</strong> Roughly ¾ of a word per token,
+            so 700 ≈ 500 words. <em>600–800 fits a full Regulation 4 answer without overflowing the chat panel.</em></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📝 System prompt</div>
+        <p class="step-note" style="margin-top:0">
+          What the assistant knows and how it behaves — the regulations it answers
+          from, its tone, and the instruction to refer students to the DSA rather
+          than guess. Edit with care: this is the whole of its knowledge.
+        </p>
+        <textarea id="botPrompt" style="width:100%;min-height:320px;margin-top:12px;background:rgba(11,22,40,.7);
+                  border:1px solid var(--border);border-radius:9px;padding:13px;color:var(--white);
+                  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.76rem;line-height:1.6;
+                  outline:none;resize:vertical"></textarea>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">
+          <button class="btn btn-gold" onclick="saveBotConfig()">Save settings</button>
+          <button class="btn" style="background:rgba(255,255,255,.06);color:var(--white);border:1px solid var(--border)"
+                  onclick="resetBotPrompt()">Restore the default prompt</button>
         </div>
       </div>
     </div>
@@ -351,8 +635,11 @@
       <div class="duration-box"><label>Minutes</label><input type="number" id="durMins" value="60" min="0" oninput="updateTotal()"/><span style="font-size:.75rem;color:var(--muted)">minutes</span></div>
     </div>
     <div class="duration-total" id="durTotal">Total: <strong>1 hour 0 minutes</strong></div>
-    <div class="notice notice-warn">⚠️ Ensure at least 2 candidates are approved and voters are registered before opening.</div>
-    <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn btn-teal" onclick="confirmStart()">Open Voting</button></div>
+    <!-- Live counts, checked before the button is pressed. The smart
+         contract refuses to open a vote with fewer than 2 candidates,
+         so finding out here beats a failed transaction. -->
+    <div class="notice notice-warn" id="startReadiness">⚠️ Ensure at least 2 candidates are approved and voters are registered before opening.</div>
+    <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn btn-teal" id="startVotingBtn" onclick="confirmStart()">Open Voting</button></div>
   </div>
 </div>
 
@@ -385,6 +672,16 @@
     <input type="hidden" id="editElId"/>
     <div class="field"><label>Title</label><input type="text" id="editElTitle"/></div>
     <div class="field"><label>Academic Year</label><input type="text" id="editElYear"/></div>
+    <div class="form-row">
+      <div class="field">
+        <label>Campus</label>
+        <select id="editElCampus">
+          <option value="Kampar">Kampar</option>
+          <option value="Sungai Long">Sungai Long</option>
+        </select>
+      </div>
+      <div class="field"><label>Polling day</label><input type="date" id="editElPolling"/></div>
+    </div>
     <div class="field"><label>Description</label><textarea id="editElDesc"></textarea></div>
     <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn btn-gold" onclick="confirmEditEl()">Save Changes</button></div>
   </div>
@@ -406,11 +703,31 @@
   </div>
 </div>
 
+<!-- Roster import preview -->
+<div class="modal-overlay" id="batchModal">
+  <div class="modal" style="max-width:900px">
+    <div class="modal-title">📄 Imported students</div>
+    <div class="modal-sub" id="batchModalSub">—</div>
+    <div style="overflow:auto;max-height:60vh">
+      <table>
+        <thead><tr><th>Student ID</th><th>Name</th><th>Campus</th><th>Faculty</th><th>Level</th><th>Eligibility</th></tr></thead>
+        <tbody id="batchTbody"><tr><td colspan="6" style="color:var(--muted)">Loading…</td></tr></tbody>
+      </table>
+    </div>
+    <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Close</button></div>
+  </div>
+</div>
+
 <!-- Link Wallet Modal -->
 <div class="modal-overlay" id="walletModal">
   <div class="modal">
-    <div class="modal-title">🔗 Link Wallet Address</div>
+    <div class="modal-title">🔗 Wallet Override</div>
     <div class="modal-sub" id="walletModalSub">—</div>
+    <div class="notice notice-warn" style="margin-bottom:16px">
+      An address entered here has not been proved by signature. Use this only for a
+      student who cannot use MetaMask and has produced their student ID at the DSA
+      counter. The action is recorded in the audit log.
+    </div>
     <input type="hidden" id="walletUserId"/>
     <div class="field"><label>Wallet Address</label><input type="text" id="walletAddr" placeholder="0x..."/></div>
     <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn btn-teal" onclick="confirmWallet()">Save Wallet</button></div>
@@ -431,9 +748,109 @@
 <div class="toast" id="toast"></div>
 
 <script>
-  const user = JSON.parse(sessionStorage.getItem('user') || 'null');
-  if (!user || user.role !== 'election_committee') window.location.href = 'eclogin.html';
+  /* A half-written or stale session must send you back to the login
+     page, not throw here — an exception on this line stops the rest of
+     the script and leaves a panel that looks loaded but does nothing. */
+  let user = null;
+  try { user = JSON.parse(sessionStorage.getItem('user') || 'null'); } catch (_) { user = null; }
+  if (!user || user.role !== 'election_committee') {
+    sessionStorage.clear();
+    window.location.replace('eclogin.html');
+    throw new Error('Not signed in as Election Committee');
+  }
   document.getElementById('navName').textContent = user.full_name;
+
+  /* ── Session token ──────────────────────────────────────────
+     The /api/ec/* routes are now behind a server-side session, so
+     every call from this page has to carry the token issued at
+     sign-in. Wrapping fetch keeps that in one place instead of
+     threading a header through sixty call sites. A 401 means the
+     session has gone, so the panel returns to the login page
+     rather than silently rendering empty tables. */
+  const ecToken = sessionStorage.getItem('ecToken');
+  if (!ecToken) window.location.href = 'eclogin.html';
+
+  const rawFetch = window.fetch.bind(window);
+  window.fetch = async (input, init = {}) => {
+    const url = typeof input === 'string' ? input : input?.url || '';
+    if (url.startsWith('/api/ec/') || url.startsWith('/api/auth/logout')) {
+      init = { ...init, headers: { ...(init.headers || {}), Authorization: `Bearer ${ecToken}` } };
+    }
+    const res = await rawFetch(input, init);
+    if (res.status === 401 && url.startsWith('/api/ec/')) {
+      sessionStorage.clear();
+      alert('Your Election Committee session has expired. Please sign in again.');
+      window.location.href = 'eclogin.html';
+    }
+    return res;
+  };
+
+  /* ── Campus scope ───────────────────────────────────────────
+     Kampar and Sungai Long have their own DSA office and their own
+     election, so the panel is opened for one campus at a time. The
+     campus is picked at sign-in and every list below is filtered by
+     it, which is what stops one office wading through the other's
+     students. It is a working scope, not the security boundary —
+     the campus rules that actually matter (who may be registered as
+     a voter, who may stand, who may endorse) are enforced on the
+     server for every request. */
+  const CAMPUS_THEME = {
+    'Kampar':      { bg:'rgba(245,200,66,.12)', c:'#f5c842', bd:'rgba(245,200,66,.3)' },
+    'Sungai Long': { bg:'rgba(167,139,250,.14)', c:'#c4b5fd', bd:'rgba(167,139,250,.35)' },
+  };
+  let ecCampus = sessionStorage.getItem('ecCampus') || 'Kampar';
+
+  function applyCampusChrome() {
+    const t=CAMPUS_THEME[ecCampus]||CAMPUS_THEME.Kampar;
+    document.documentElement.style.setProperty('--campus-bg', t.bg);
+    document.documentElement.style.setProperty('--campus-c',  t.c);
+    document.documentElement.style.setProperty('--campus-bd', t.bd);
+    document.getElementById('navCampus').textContent=`📍 ${ecCampus} Campus`;
+    document.title=`UTAR SRC — EC Panel (${ecCampus})`;
+    // The panel is already scoped to one campus, so offering the other
+    // one in these dropdowns only invites creating an election you then
+    // cannot see. Each is narrowed to the campus being managed; use
+    // Switch campus to work on the other.
+    ['elCampus','editElCampus'].forEach(id=>{
+      const sel=document.getElementById(id);
+      if (sel) sel.innerHTML=`<option value="${ecCampus}">${ecCampus}</option>`;
+    });
+  }
+  applyCampusChrome();
+
+  /** Append the working campus to any EC list request. */
+  function withCampus(url) {
+    return url + (url.includes('?') ? '&' : '?') + 'campus=' + encodeURIComponent(ecCampus);
+  }
+
+  /* The sidebar badge is always on screen, so it has to be refreshed
+     whenever the campus changes — not just at page load. */
+  function refreshPendingBadge() {
+    fetch(withCampus('/api/ec/pending-students')).then(r=>r.json()).then(d=>{
+      const n=(d.pending||[]).length;
+      const cnt=document.getElementById('pendingCount');
+      cnt.textContent=n; cnt.style.display = n>0 ? 'inline-block' : 'none';
+    }).catch(()=>{});
+  }
+
+  function switchCampus() {
+    const other = ecCampus === 'Kampar' ? 'Sungai Long' : 'Kampar';
+    if (!confirm(`Switch this panel to ${other} Campus?`)) return;
+    ecCampus = other;
+    sessionStorage.setItem('ecCampus', other);
+    applyCampusChrome();
+    refreshPendingBadge();
+    // The selected election belongs to the campus we just left.
+    selectedElection=null;
+    document.getElementById('elStatusPill').style.display='none';
+    loadElectionSelector().then(()=>{
+      const active=document.querySelector('.section.active');
+      const id=active?active.id.replace('section-',''):'dashboard';
+      const link=[...document.querySelectorAll('.sidebar-link')].find(l=>l.getAttribute('onclick')?.includes(`'${id}'`));
+      showSection(id, link);
+    });
+    toast(`Now managing ${other} Campus`);
+  }
 
   let elections=[], selectedElection=null, activeElId=null;
 
@@ -453,6 +870,9 @@
     if (id==='nominations') loadNominations();
     if (id==='candidates')  loadCandidates();
     if (id==='voters')      checkVoterForm();
+    if (id==='roster')      loadRosterHistory();
+    if (id==='chatbot')     loadBotConfig();
+    if (id==='changes')     loadChangeRequests();
     if (id==='audit')       loadAudit();
   }
 
@@ -478,11 +898,11 @@
 
   // ── Election selector ──────────────────────────────────────
   async function loadElectionSelector() {
-    const r=await fetch('/api/elections'); const d=await r.json();
+    const r=await fetch(withCampus('/api/elections')); const d=await r.json();
     elections=d.elections||[];
     const sel=document.getElementById('electionSelect');
     sel.innerHTML='<option value="">— Select an election —</option>'+
-      elections.map(e=>`<option value="${e.id}">${e.title} (${e.academic_year}) — ${e.status}</option>`).join('');
+      elections.map(e=>`<option value="${e.id}">${e.title} — ${e.campus||'Kampar'} (${e.academic_year}) — ${e.status}</option>`).join('');
   }
 
   function onElectionChange() {
@@ -506,9 +926,9 @@
   // ── Dashboard ──────────────────────────────────────────────
   async function loadDashboard() {
     const [rp,rs,re]=await Promise.all([
-      fetch('/api/ec/pending-students').then(r=>r.json()),
-      fetch('/api/ec/students').then(r=>r.json()),
-      fetch('/api/elections').then(r=>r.json()),
+      fetch(withCampus('/api/ec/pending-students')).then(r=>r.json()),
+      fetch(withCampus('/api/ec/students')).then(r=>r.json()),
+      fetch(withCampus('/api/elections')).then(r=>r.json()),
     ]);
     const pending=(rp.pending||[]).length;
     document.getElementById('dashPending').textContent=pending;
@@ -542,7 +962,7 @@
 
   // ── Pending students ───────────────────────────────────────
   async function loadPending() {
-    const r=await fetch('/api/ec/pending-students'); const d=await r.json();
+    const r=await fetch(withCampus('/api/ec/pending-students')); const d=await r.json();
     const list=document.getElementById('pendingList');
     const pending=d.pending||[];
     if (!pending.length) { list.innerHTML='<p style="color:var(--muted);text-align:center;padding:20px">✅ No pending registrations.</p>'; return; }
@@ -579,7 +999,7 @@
     const search=document.getElementById('sSearch')?.value||'';
     let url='/api/ec/students?';
     if (search) url+=`search=${encodeURIComponent(search)}`;
-    const r=await fetch(url); const d=await r.json();
+    const r=await fetch(withCampus(url)); const d=await r.json();
     const tb=document.getElementById('studentsTbody');
     const students=(d.students||[]).filter(s=>s.is_approved);
     if (!students.length) { tb.innerHTML='<tr><td colspan="6" style="color:var(--muted)">No approved students found.</td></tr>'; return; }
@@ -587,12 +1007,14 @@
       <tr>
         <td>${s.student_id}</td>
         <td>${s.full_name}</td>
+        <td style="font-size:.78rem">${s.campus||'—'}</td>
         <td style="font-size:.78rem;color:var(--muted)">${s.faculty}</td>
-        <td><span class="tag tag-teal">Approved</span></td>
-        <td style="font-family:monospace;font-size:.75rem;color:${s.wallet_address?'#00e5cc':'var(--muted)'}">
-          ${s.wallet_address||'— not linked —'}
+        <td style="font-family:monospace;font-size:.74rem;color:${s.wallet_address?'#00e5cc':'var(--muted)'}">
+          ${s.wallet_address
+            ? `${s.wallet_address}<br><span class="tag ${s.wallet_verified_at?'tag-green':'tag-gold'}" style="font-family:'DM Sans',sans-serif">${s.wallet_verified_at?'✓ Signature verified':'⚠ Entered manually'}</span>`
+            : '— not linked —'}
         </td>
-        <td><button class="btn btn-edit" onclick="openWalletModal(${s.id},'${s.full_name.replace(/'/g,"\\'")}','${s.wallet_address||''}')">🔗 Link Wallet</button></td>
+        <td><button class="btn btn-edit" onclick="openWalletModal(${s.id},'${s.full_name.replace(/'/g,"\\'")}','${s.wallet_address||''}')">🔗 Override</button></td>
       </tr>`).join('');
   }
 
@@ -619,7 +1041,7 @@
     let url='/api/elections?';
     if (search) url+=`search=${encodeURIComponent(search)}&`;
     if (status) url+=`status=${status}`;
-    const r=await fetch(url); const d=await r.json();
+    const r=await fetch(withCampus(url)); const d=await r.json();
     const els=d.elections||[];
     const list=document.getElementById('electionList');
     if (!els.length) { list.innerHTML='<p style="color:var(--muted)">No elections found.</p>'; return; }
@@ -631,14 +1053,14 @@
         <div class="el-header">
           <div>
             <div class="el-title">${e.title}</div>
-            <div class="el-meta">Academic Year: ${e.academic_year}${e.description?` · ${e.description}`:''}</div>
+            <div class="el-meta">${e.campus||'Kampar'} Campus · Academic Year: ${e.academic_year}${e.polling_date?` · Polling ${new Date(e.polling_date).toLocaleDateString('en-MY')}`:''}${e.description?` · ${e.description}`:''}</div>
           </div>
           <span class="tag ${e.status==='active'?'tag-teal':e.status==='ended'?'tag-red':e.status==='nomination'?'tag-gold':'tag-grey'}">${statusMap[e.status]||e.status}</span>
         </div>
         <div class="el-footer">
           <div class="el-actions">
             ${e.status==='setup'?`
-              <button class="btn btn-edit" onclick="openEditEl(${e.id},'${e.title.replace(/'/g,"\\'")}','${e.academic_year}','${(e.description||'').replace(/'/g,"\\'")}')">✏️ Edit</button>
+              <button class="btn btn-edit" onclick="openEditEl(${e.id},'${e.title.replace(/'/g,"\\'")}','${e.academic_year}','${(e.description||'').replace(/'/g,"\\'")}','${e.campus||'Kampar'}','${e.polling_date?String(e.polling_date).slice(0,10):''}')">✏️ Edit</button>
               <button class="btn btn-danger" style="padding:6px 13px;font-size:.78rem" onclick="deleteEl(${e.id})">🗑️ Delete</button>
               <button class="btn btn-gold" onclick="openNomModal(${e.id},'${e.title.replace(/'/g,"\\'")}')">📝 Open Nominations</button>
             `:''} 
@@ -656,20 +1078,25 @@
     const title=document.getElementById('elTitle').value.trim();
     const year=document.getElementById('elYear').value.trim();
     const desc=document.getElementById('elDesc').value.trim();
+    const campus=document.getElementById('elCampus').value;
+    const polling=document.getElementById('elPolling').value;
     if (!title||!year) { toast('Title and academic year required.','error'); return; }
-    const r=await fetch('/api/ec/elections',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,academic_year:year,description:desc})});
+    const r=await fetch('/api/ec/elections',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({title,academic_year:year,description:desc,campus,polling_date:polling||null})});
     const d=await r.json();
     if (!r.ok) { toast(d.error,'error'); return; }
-    toast(`✅ "${title}" created!`);
-    ['elTitle','elYear','elDesc'].forEach(id=>document.getElementById(id).value='');
+    toast(`✅ "${title}" created for ${campus} Campus!`);
+    ['elTitle','elYear','elDesc','elPolling'].forEach(id=>document.getElementById(id).value='');
     loadElections(); loadElectionSelector();
   }
 
-  function openEditEl(id,title,year,desc) {
+  function openEditEl(id,title,year,desc,campus,polling) {
     document.getElementById('editElId').value=id;
     document.getElementById('editElTitle').value=title;
     document.getElementById('editElYear').value=year;
     document.getElementById('editElDesc').value=desc;
+    document.getElementById('editElCampus').value=campus||'Kampar';
+    document.getElementById('editElPolling').value=polling||'';
     document.getElementById('editElModal').classList.add('open');
   }
   async function confirmEditEl() {
@@ -677,7 +1104,10 @@
     const title=document.getElementById('editElTitle').value.trim();
     const year=document.getElementById('editElYear').value.trim();
     const desc=document.getElementById('editElDesc').value.trim();
-    const r=await fetch(`/api/ec/elections/${id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,academic_year:year,description:desc})});
+    const campus=document.getElementById('editElCampus').value;
+    const polling=document.getElementById('editElPolling').value;
+    const r=await fetch(`/api/ec/elections/${id}`,{method:'PUT',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({title,academic_year:year,description:desc,campus,polling_date:polling||null})});
     const d=await r.json();
     if (!r.ok) { toast(d.error,'error'); return; }
     toast('✅ Election updated!'); closeModal(); loadElections(); loadElectionSelector();
@@ -724,21 +1154,59 @@
           <span class="tag ${n.status==='pending'?'tag-gold':n.status==='approved'?'tag-green':'tag-red'}" style="margin-left:8px">${n.status}</span>
         </div>
         <div class="nom-meta">
-          Running for: <strong style="color:var(--white)">${n.position}</strong> · ${n.student_faculty}
-          ${n.proposer_name?`<br>Proposer: ${n.proposer_name} (${n.proposer_id||'—'}) · Seconder: ${n.seconder_name||'—'} (${n.seconder_id||'—'})`:''}
+          Running for: <strong style="color:var(--white)">${n.position}</strong> · ${n.student_faculty} · ${n.student_campus||n.campus||'—'} Campus
         </div>
+        ${endorsementBlock(n)}
         ${n.manifesto?`<div class="nom-manifesto">"${n.manifesto}"</div>`:''}
         <div class="nom-footer">
           <span style="font-size:.75rem;color:var(--muted)">Submitted: ${new Date(n.created_at).toLocaleString('en-MY')}</span>
-          <div style="display:flex;gap:8px">
-            ${n.status==='pending'?`
-              <button class="btn btn-approve" onclick="approveNomination(${n.id})">✅ Approve &amp; Add to Blockchain</button>
-              <button class="btn btn-reject"  onclick="openRejectModal(${n.id},'${n.student_name.replace(/'/g,"\\'")}')">❌ Reject</button>
-            `:''}
+          <div style="display:flex;gap:8px;align-items:center">
+            ${nominationActions(n)}
             ${n.status==='rejected'&&n.rejection_reason?`<span style="font-size:.75rem;color:var(--red)">Reason: ${n.rejection_reason}</span>`:''}
           </div>
         </div>
       </div>`).join('');
+  }
+
+  /* The four endorsements required by Reg 20(1), with the proof
+     each endorser supplied. This is what the committee is actually
+     reviewing — in v4 it was four strings the nominee typed.     */
+  function endorsementBlock(n) {
+    if (!n.endorsements || !n.endorsements.length)
+      return '<div class="nom-meta" style="color:var(--gold)">Legacy v4 nomination — no verified endorsements on record.</div>';
+
+    const rows=n.endorsements.map(e=>`
+      <div class="end-row">
+        <div>
+          <span class="end-who">${esc(e.label)}: ${esc(e.full_name)}</span>
+          <span style="color:var(--muted)"> (${esc(e.student_id)} · ${esc(e.campus)})</span>
+          ${e.status==='confirmed'?`<div class="end-proof">${
+            e.verification_method==='wallet_signature'
+              ? `signed by ${esc(e.wallet_address||'')} · ${esc(e.signature_short||'')}`
+              : 'confirmed by account password'
+          } · ${new Date(e.responded_at).toLocaleString('en-MY')}</div>`:''}
+          ${e.decline_reason?`<div class="end-proof" style="color:var(--red)">Reason: ${esc(e.decline_reason)}</div>`:''}
+        </div>
+        <span class="tag ${e.status==='confirmed'?'tag-green':e.status==='declined'?'tag-red':'tag-gold'}">
+          ${e.status==='confirmed'?'✓ Confirmed':e.status==='declined'?'Declined':'Waiting'}
+        </span>
+      </div>`).join('');
+
+    return `<div class="end-box">
+      <div class="end-head">Endorsements under Reg 20(1) — ${n.confirmed_count}/4 confirmed</div>
+      ${rows}
+    </div>`;
+  }
+
+  /* Approve is only offered once all four have confirmed. The server
+     enforces the same rule, so a hand-made request cannot skip it. */
+  function nominationActions(n) {
+    if (n.status==='awaiting_endorsement')
+      return `<span style="font-size:.78rem;color:var(--gold)">Waiting on ${4-n.confirmed_count} more endorsement(s)</span>`;
+    if (n.status!=='pending') return '';
+    return `
+      <button class="btn btn-approve" onclick="approveNomination(${n.id})">✅ Approve &amp; Add to Blockchain</button>
+      <button class="btn btn-reject"  onclick="openRejectModal(${n.id},'${String(n.student_name).replace(/'/g,"\\'")}')">❌ Reject</button>`;
   }
 
   async function approveNomination(id) {
@@ -817,10 +1285,339 @@
     toast('🗑️ Candidate deleted.'); loadCandidates();
   }
 
-  // ── Voter registration ─────────────────────────────────────
+  // ── Voter registration (v5: queue + batch) ─────────────────
   function checkVoterForm() {
-    document.getElementById('voterForm').style.display=selectedElection?'block':'none';
+    document.getElementById('voterPanel').style.display  =selectedElection?'block':'none';
     document.getElementById('voterElNotice').style.display=selectedElection?'none':'block';
+    if (selectedElection) loadVoterStats();
+  }
+
+  /* The five counters are a pipeline, so they now read left to right in
+     the order a student actually moves through it, and the sentence
+     underneath says which of the two buttons is due next. */
+  async function loadVoterStats() {
+    try {
+      const r=await fetch(`/api/ec/elections/${selectedElection.id}/voters/status`);
+      const d=await r.json();
+      if (!r.ok) return;
+
+      const noWallet=d.approved_without_wallet, ready=d.eligible_with_wallet;
+      const queued=d.summary.queued, registered=d.summary.registered, failed=d.summary.failed;
+
+      document.getElementById('voterStats').innerHTML=`
+        <div class="stat ${noWallet?'warn':''}"><div class="n">${noWallet}</div><div class="l">Waiting on the student to link a wallet</div></div>
+        <div class="stat"><div class="n">${ready}</div><div class="l">Wallet proved, ${d.campus}</div></div>
+        <div class="stat ${queued?'warn':''}"><div class="n">${queued}</div><div class="l">Queued, not yet sent</div></div>
+        <div class="stat good"><div class="n">${registered}</div><div class="l">On the blockchain</div></div>
+        <div class="stat ${failed?'bad':''}"><div class="n">${failed}</div><div class="l">Failed — send again to retry</div></div>`;
+
+      const step=document.getElementById('voterNextStep');
+      const btnQueue=document.getElementById('btnQueue');
+      const btnRegister=document.getElementById('btnRegister');
+
+      // Step 2 is only meaningful once something is waiting to be sent.
+      btnRegister.disabled=!(queued||failed);
+      btnQueue.disabled=!ready;
+
+      if (failed) {
+        step.className='notice notice-warn';
+        step.textContent=`${failed} registration${failed===1?'':'s'} failed. Press "Send to blockchain" again to retry just those.`;
+      } else if (queued) {
+        step.className='notice notice-warn';
+        step.textContent=`Next: ${queued} voter${queued===1?' is':'s are'} queued and ready. Press "Send to blockchain".`;
+      } else if (ready>registered) {
+        step.className='notice notice-info';
+        step.textContent=`Next: ${ready-registered} eligible student${ready-registered===1?'' : 's'} with a proved wallet ${ready-registered===1?'is':'are'} not registered yet. Press "Queue eligible voters".`;
+      } else if (registered) {
+        step.className='notice notice-info';
+        step.textContent=`All ${registered} eligible voter${registered===1?'' : 's'} on this campus ${registered===1?'is':'are'} registered on the blockchain.`;
+      } else {
+        step.className='notice notice-info';
+        step.textContent='No students have proved a wallet yet, so there is nobody to queue. Students link their own wallet from their profile page.';
+      }
+
+      loadVoterList();
+    } catch {}
+  }
+
+  /* Who is actually registered. The counters say how many; the EC still
+     has to be able to answer "is this particular student on the chain?"
+     and "why did that one fail?". */
+  async function loadVoterList() {
+    if (!selectedElection) return;
+    const tb=document.getElementById('votersTbody');
+    const search=document.getElementById('vSearch')?.value.trim()||'';
+    const status=document.getElementById('vStatusFilter')?.value||'';
+    const qs=new URLSearchParams();
+    if (search) qs.set('search',search);
+    if (status) qs.set('status',status);
+    try {
+      const r=await fetch(`/api/ec/elections/${selectedElection.id}/voters?${qs}`);
+      const d=await r.json();
+      if (!r.ok) { tb.innerHTML=`<tr><td colspan="6" style="color:var(--red)">${esc(d.error)}</td></tr>`; return; }
+      const voters=d.voters||[];
+      if (!voters.length) {
+        tb.innerHTML='<tr><td colspan="6" style="color:var(--muted)">'+
+          (search||status?'No registrations match that filter.':'Nothing queued yet.')+'</td></tr>';
+        return;
+      }
+      const TAG={ registered:['tag-green','On the blockchain'], queued:['tag-gold','Queued'],
+                  failed:['tag-red','Failed'], superseded:['tag-grey','Released'] };
+      tb.innerHTML=voters.map(v=>{
+        const [cls,label]=TAG[v.status]||['tag-grey',v.status];
+        const note=v.status==='failed' ? esc(v.error_message||'No reason recorded')
+                 : v.tx_hash ? `<span style="font-family:monospace;font-size:.72rem">${esc(v.tx_hash.slice(0,18))}…</span>`
+                 : '<span style="color:var(--muted)">—</span>';
+        return `<tr>
+          <td>${esc(v.student_id)}</td>
+          <td>${esc(v.full_name)}</td>
+          <td style="font-family:monospace;font-size:.72rem;color:var(--muted)">${v.wallet_address?esc(v.wallet_address.slice(0,10))+'…'+esc(v.wallet_address.slice(-4)):'—'}</td>
+          <td><span class="tag ${cls}">${label}</span></td>
+          <td style="font-size:.76rem">${note}</td>
+          <td>${v.status==='registered'||v.status==='queued'
+                ? `<button class="btn-sm" onclick="releaseVoter(${v.user_id},'${esc(v.student_id)}')">Release</button>` : ''}</td>
+        </tr>`;
+      }).join('');
+    } catch {
+      tb.innerHTML='<tr><td colspan="6" style="color:var(--red)">Could not load the registration list.</td></tr>';
+    }
+  }
+
+  /* Frees a student's slot so they can link a different wallet — the
+     counter case for a lost or replaced MetaMask account. The server
+     refuses this once voting is open. */
+  async function releaseVoter(userId, studentCode) {
+    if (!confirm(`Release the registered slot for ${studentCode}? They will be able to link a different wallet and be queued again.`)) return;
+    const r=await fetch(`/api/ec/elections/${selectedElection.id}/voters/${userId}/release`,{method:'POST'});
+    const d=await r.json();
+    if (!r.ok) { toast(d.error,'error'); return; }
+    toast(d.message); loadVoterStats();
+  }
+
+  async function queueVoters() {
+    if (!selectedElection) { toast('Select an election first.','error'); return; }
+    const r=await fetch(`/api/ec/elections/${selectedElection.id}/voters/queue`,{method:'POST'});
+    const d=await r.json();
+    if (!r.ok) { toast(d.error,'error'); return; }
+    const log=document.getElementById('batchLog');
+    log.style.display='block';
+    log.textContent=d.message+'\n';
+    if (d.skipped?.length) {
+      log.textContent+=`\nSkipped ${d.skipped.length}:\n`+
+        d.skipped.slice(0,40).map(s=>`  ${s.student_id} — ${s.reasons.join('; ')}`).join('\n');
+    }
+    toast(d.message); loadVoterStats();
+  }
+
+  async function registerBatch() {
+    if (!selectedElection) { toast('Select an election first.','error'); return; }
+    const chunkSize=parseInt(document.getElementById('chunkSize').value,10)||100;
+    if (!confirm(`Send the queued voters to the blockchain in chunks of ${chunkSize}? Each chunk is one transaction.`)) return;
+
+    const log=document.getElementById('batchLog');
+    log.style.display='block';
+    log.textContent='Sending transactions…\n';
+
+    const r=await fetch(`/api/ec/elections/${selectedElection.id}/voters/register-batch`,{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({chunkSize}),
+    });
+    const d=await r.json();
+    if (!r.ok) { log.textContent+=`\nFailed: ${d.error}`; toast(d.error,'error'); return; }
+
+    log.textContent=d.message+'\n\n'+(d.batches||[]).map(b=>
+      b.status==='registered'
+        ? `Batch ${b.batch}  ${String(b.count).padStart(4)} voters  gas ${b.gas_used}\n  tx ${b.tx_hash}`
+        : `Batch ${b.batch}  ${String(b.count).padStart(4)} voters  FAILED — ${b.error}`
+    ).join('\n');
+
+    toast(d.message); loadVoterStats();
+  }
+
+  /* Clicking a batch shows exactly which students that upload left on
+     the roster — the audit log records that an import happened, but not
+     who was in it. */
+  async function openBatchModal(batch) {
+    document.getElementById('batchModalSub').textContent=batch;
+    const tb=document.getElementById('batchTbody');
+    tb.innerHTML='<tr><td colspan="6" style="color:var(--muted)">Loading…</td></tr>';
+    document.getElementById('batchModal').classList.add('open');
+    try {
+      const r=await fetch(`/api/ec/roster/imports/${encodeURIComponent(batch)}`);
+      const d=await r.json();
+      const students=d.students||[];
+      if (!students.length) {
+        tb.innerHTML='<tr><td colspan="6" style="color:var(--muted)">No students remain under this import.</td></tr>';
+        return;
+      }
+      document.getElementById('batchModalSub').textContent=`${batch} — ${students.length} students`;
+      tb.innerHTML=students.map(s=>{
+        // Mirrors Reg 14(1): on leave or not on campus means no vote.
+        const blocked=!s.is_enrolled?'Not enrolled'
+                     :s.on_leave?'On leave (Reg 14(1)(a))'
+                     :s.delivery_mode!=='on_campus'?'Distance/External (Reg 14(1)(b))':null;
+        return `<tr>
+          <td>${esc(s.student_id)}</td>
+          <td>${esc(s.full_name)}</td>
+          <td style="font-size:.78rem">${esc(s.campus)}</td>
+          <td style="font-size:.76rem;color:var(--muted)">${esc(s.faculty||'—')}</td>
+          <td style="font-size:.76rem;color:var(--muted)">${esc(s.study_level||'—')}${s.is_international?' · international':''}</td>
+          <td>${blocked?`<span class="tag tag-red">${esc(blocked)}</span>`:'<span class="tag tag-green">Can vote</span>'}</td>
+        </tr>`;
+      }).join('');
+    } catch {
+      tb.innerHTML='<tr><td colspan="6" style="color:var(--red)">Could not load that import.</td></tr>';
+    }
+  }
+
+  async function loadRosterHistory() {
+    const tb=document.getElementById('rosterHistoryTbody');
+    try {
+      const r=await fetch('/api/ec/roster/imports');
+      const d=await r.json();
+      const imports=d.imports||[];
+      if (!imports.length) {
+        tb.innerHTML='<tr><td colspan="5" style="color:var(--muted)">No roster has been imported yet.</td></tr>';
+        return;
+      }
+      tb.innerHTML=imports.map(i=>`
+        <tr>
+          <td style="font-size:.8rem"><a onclick="openBatchModal('${esc(i.batch).replace(/'/g,"\\'")}')" style="color:var(--teal);cursor:pointer;text-decoration:underline">${esc(i.batch)}</a></td>
+          <td style="font-size:.78rem;color:var(--muted)">${i.imported_at?new Date(i.imported_at).toLocaleString('en-MY'):'—'}</td>
+          <td><strong>${i.students}</strong></td>
+          <td style="color:var(--muted)">${i.kampar}</td>
+          <td style="color:var(--muted)">${i.sungai_long}</td>
+        </tr>`).join('');
+    } catch {
+      tb.innerHTML='<tr><td colspan="5" style="color:var(--red)">Could not load the import history.</td></tr>';
+    }
+  }
+
+  // ── Student roster (v5) ─────────────────────────────────────
+  // Universities send spreadsheets, not CSV text — parse .xlsx client-side
+  // with SheetJS and post the same JSON array the backend already expects.
+  let rosterRows = null, rosterFileName = '';
+
+  document.getElementById('rosterFile').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    rosterFileName = file ? file.name : '';
+    const preview = document.getElementById('rosterPreview');
+    rosterRows = null;
+    if (!file) { preview.textContent=''; return; }
+    try {
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf, { type: 'array' });
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      const parsed = XLSX.utils.sheet_to_json(sheet, { defval: '', raw: true });
+      rosterRows = parsed.map(row => {
+        const out = {};
+        for (const key in row) {
+          const cleanKey = key.trim();
+          const val = row[key];
+          out[cleanKey] = typeof val === 'string' ? val.trim() : val;
+        }
+        return out;
+      });
+      preview.textContent = rosterRows.length
+        ? `✓ ${file.name} — ${rosterRows.length} rows ready to import.`
+        : `${file.name} has no data rows.`;
+    } catch (err) {
+      preview.textContent = '';
+      toast('Could not read that spreadsheet: '+err.message,'error');
+    }
+  });
+
+  async function importRoster() {
+    if (!rosterRows || !rosterRows.length) { toast('Choose an .xlsx file first.','error'); return; }
+
+    // The label is what the import history shows, so name it after the
+    // file the EC actually uploaded plus the time — otherwise two
+    // imports on the same day are indistinguishable. The column holds
+    // 60 characters, hence the trim.
+    const stamp=new Date().toLocaleString('en-MY',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false});
+    const batch=`${(rosterFileName||'roster').slice(0,32)} · ${stamp}`.slice(0,60);
+
+    const r=await fetch('/api/ec/roster/import',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({rows:rosterRows,batch}),
+    });
+    const d=await r.json();
+    const log=document.getElementById('rosterLog');
+    log.style.display='block';
+    if (!r.ok) { log.textContent=d.error; toast(d.error,'error'); return; }
+    log.textContent=d.message+(d.rejected?.length
+      ? '\n\n'+d.rejected.map(x=>`  line ${x.line}: ${x.reason}`).join('\n'):'');
+    toast(d.message);
+    document.getElementById('rosterFile').value='';
+    rosterRows=null; rosterFileName=''; document.getElementById('rosterPreview').textContent='';
+    loadRosterHistory();
+  }
+
+  async function reconcileRoster() {
+    const r=await fetch('/api/ec/roster/reconcile',{method:'POST'});
+    const d=await r.json();
+    if (!r.ok) { toast(d.error,'error'); return; }
+    const log=document.getElementById('rosterLog');
+    log.style.display='block'; log.textContent=d.message;
+    toast(d.message); loadPending(); loadDashboard();
+  }
+
+  // ── Profile change requests (v5) ───────────────────────────
+  async function loadChangeRequests() {
+    const r=await fetch('/api/ec/profile-requests?status=pending');
+    const d=await r.json();
+    const box=document.getElementById('changeList');
+    const list=d.requests||[];
+
+    const badge=document.getElementById('changeCount');
+    if (list.length) { badge.textContent=list.length; badge.style.display='inline-block'; }
+    else badge.style.display='none';
+
+    if (!list.length) {
+      box.innerHTML='<p style="color:var(--muted);text-align:center;padding:20px">✅ No changes waiting for review.</p>';
+      return;
+    }
+
+    box.innerHTML=list.map(c=>`
+      <div class="pending-item">
+        <div class="pending-info">
+          <div class="name">${esc(c.full_name)} <span style="font-size:.75rem;color:var(--muted)">(${esc(c.student_id)} · ${esc(c.campus)})</span></div>
+          <div class="meta">${esc(fieldLabel(c.field_name))}: <s style="color:var(--muted)">${esc(c.old_value||'—')}</s> &rarr; <strong style="color:var(--white)">${esc(c.new_value)}</strong></div>
+          ${c.reason?`<div class="meta">Student's reason: ${esc(c.reason)}</div>`:''}
+          <div class="meta">Requested: ${new Date(c.created_at).toLocaleString('en-MY')}</div>
+        </div>
+        <div class="pending-actions">
+          <button class="btn btn-approve" onclick="approveChange(${c.id})">✅ Approve</button>
+          <button class="btn btn-reject"  onclick="rejectChange(${c.id})">❌ Reject</button>
+        </div>
+      </div>`).join('');
+  }
+
+  function fieldLabel(f) {
+    return {full_name:'Full name',email:'Email',faculty:'Faculty',campus:'Campus',student_id:'Student ID',phone:'Phone'}[f]||f;
+  }
+
+  async function approveChange(id) {
+    const r=await fetch(`/api/ec/profile-requests/${id}/approve`,{method:'POST'});
+    const d=await r.json();
+    if (!r.ok) { toast(d.error,'error'); return; }
+    toast(d.message); loadChangeRequests(); loadStudents();
+  }
+
+  async function rejectChange(id) {
+    const note=prompt('Why is this change being rejected? (shown to the student)');
+    if (note===null) return;
+    const r=await fetch(`/api/ec/profile-requests/${id}/reject`,{
+      method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({note}),
+    });
+    const d=await r.json();
+    if (!r.ok) { toast(d.error,'error'); return; }
+    toast(d.message); loadChangeRequests();
+  }
+
+  function esc(s) {
+    return String(s ?? '').replace(/[&<>"']/g, c =>
+      ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
   }
   async function registerVoter() {
     if (!selectedElection) { toast('Select an election first.','error'); return; }
@@ -841,6 +1638,41 @@
     document.getElementById('startModalSub').textContent=`Election: ${title}`;
     document.getElementById('durDays').value='0'; document.getElementById('durMins').value='60'; updateTotal();
     document.getElementById('startModal').classList.add('open');
+    checkStartReadiness(id);
+  }
+
+  /* The blockchain will refuse to open a vote with fewer than two
+     candidates. Rather than let that surface as a failed transaction
+     half way through, ask before the button is pressed and say plainly
+     what is missing. */
+  async function checkStartReadiness(id) {
+    const box=document.getElementById('startReadiness');
+    const btn=document.getElementById('startVotingBtn');
+    box.className='notice notice-warn';
+    box.textContent='Checking whether this election is ready…';
+    if (btn) btn.disabled=true;
+    try {
+      const r=await fetch(`/api/ec/elections/${id}/readiness`);
+      const d=await r.json();
+      if (!r.ok) throw new Error(d.error||'Could not check readiness');
+      const k=d.readiness;
+      if (!k.canOpen) {
+        box.className='notice notice-warn';
+        box.innerHTML=`⚠️ ${esc(k.blockers.join(' '))}`;
+        if (btn) btn.disabled=true;
+        return;
+      }
+      const warn=k.warnings.length ? ` ⚠️ ${esc(k.warnings.join(' '))}` : '';
+      box.className='notice notice-info';
+      box.innerHTML=`✅ ${k.candidates} candidates approved · ${k.registered} voters registered on the blockchain.${warn}`;
+      if (btn) btn.disabled=false;
+    } catch (err) {
+      // Never block the button on a failed check — the server and the
+      // contract both still enforce the rule.
+      box.className='notice notice-warn';
+      box.textContent='⚠️ Ensure at least 2 candidates are approved and voters are registered before opening.';
+      if (btn) btn.disabled=false;
+    }
   }
   async function confirmStart() {
     const days=parseInt(document.getElementById('durDays').value)||0;
@@ -880,15 +1712,118 @@
       </tr>`).join('');
   }
 
-  function logout() { sessionStorage.clear(); window.location.href='eclogin.html'; }
+  // ── AI assistant configuration (v5) ─────────────────────────
+  let botProviders = {};
+
+  async function loadBotConfig() {
+    try {
+      const r = await fetch('/api/ec/chatbot/config');
+      const d = await r.json();
+      if (!r.ok) { toast(d.error, 'error'); return; }
+      const c = d.config;
+      botProviders = c.providers || {};
+
+      const sel = document.getElementById('botProvider');
+      sel.innerHTML = Object.entries(botProviders)
+        .map(([k, v]) => `<option value="${esc(k)}">${esc(v.label)}</option>`).join('');
+      sel.value = c.provider;
+
+      document.getElementById('botModel').value = c.model;
+      document.getElementById('botEnabled').value = c.is_enabled ? '1' : '0';
+      document.getElementById('botPrompt').value = c.system_prompt;
+      document.getElementById('botMaxTokens').value = c.max_tokens;
+      setRange('botTemp', 'tempVal', c.temperature);
+      setRange('botTopP', 'toppVal', c.top_p);
+      setRange('botTopK', 'topkVal', c.top_k);
+
+      document.getElementById('botKey').value = '';
+      document.getElementById('botKeyHint').innerHTML = c.has_key
+        ? `A key is saved (<code>${esc(c.key_preview)}</code>). Leave blank to keep it, or paste a new one to replace it.`
+        : `<span style="color:var(--gold)">No key saved yet — the assistant answers from the built-in FAQ and refers anything else to the DSA.</span>`;
+
+      document.getElementById('botStats').innerHTML = `
+        <div class="stat ${c.is_enabled ? 'good' : 'bad'}"><div class="n">${c.is_enabled ? 'On' : 'Off'}</div><div class="l">Assistant</div></div>
+        <div class="stat ${c.has_key ? 'good' : 'warn'}"><div class="n">${c.has_key ? 'Saved' : 'None'}</div><div class="l">API key (encrypted)</div></div>
+        <div class="stat"><div class="n" style="font-size:1rem;word-break:break-all">${esc(c.model)}</div><div class="l">${esc(botProviders[c.provider]?.label || c.provider)}</div></div>
+        <div class="stat"><div class="n">${c.temperature}</div><div class="l">Temperature</div></div>`;
+    } catch {
+      toast('Could not load the assistant settings', 'error');
+    }
+  }
+
+  function setRange(rangeId, labelId, value) {
+    document.getElementById(rangeId).value = value;
+    document.getElementById(labelId).textContent = value;
+  }
+
+  function onBotProviderChange() {
+    // Offer that provider's usual model rather than leaving the previous
+    // provider's model name in the box, which would just fail on save.
+    const p = botProviders[document.getElementById('botProvider').value];
+    if (p) document.getElementById('botModel').value = p.defaultModel;
+  }
+
+  async function saveBotConfig() {
+    const body = {
+      provider:      document.getElementById('botProvider').value,
+      model:         document.getElementById('botModel').value.trim(),
+      is_enabled:    document.getElementById('botEnabled').value === '1',
+      system_prompt: document.getElementById('botPrompt').value,
+      temperature:   parseFloat(document.getElementById('botTemp').value),
+      top_p:         parseFloat(document.getElementById('botTopP').value),
+      top_k:         parseInt(document.getElementById('botTopK').value, 10),
+      max_tokens:    parseInt(document.getElementById('botMaxTokens').value, 10),
+    };
+    const key = document.getElementById('botKey').value.trim();
+    if (key) body.api_key = key;          // blank means "keep the stored key"
+
+    const r = await fetch('/api/ec/chatbot/config', {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+    });
+    const d = await r.json();
+    if (!r.ok) { toast(d.error, 'error'); return; }
+    toast('✅ ' + d.message);
+    loadBotConfig();
+  }
+
+  async function testBot() {
+    const log = document.getElementById('botTestLog');
+    log.style.display = 'block';
+    log.textContent = 'Asking the model a test question…';
+    const r = await fetch('/api/ec/chatbot/test', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: 'In one sentence, who is allowed to vote in the SRC election?' }),
+    });
+    const d = await r.json();
+    if (!r.ok) {
+      log.textContent = `❌ ${d.error}`;
+      toast('Test failed — see the panel', 'error');
+      return;
+    }
+    log.textContent = `✅ ${d.provider} · ${d.model} · ${d.ms} ms\n\n${d.answer}`;
+    toast('✅ The assistant answered');
+  }
+
+  async function resetBotPrompt() {
+    if (!confirm('Replace the system prompt with the shipped default? Your edits will be lost.')) return;
+    const r = await fetch('/api/ec/chatbot/reset-prompt', { method: 'POST' });
+    const d = await r.json();
+    if (!r.ok) { toast(d.error, 'error'); return; }
+    toast('✅ ' + d.message);
+    loadBotConfig();
+  }
+
+  async function logout() {
+    // Revoke the token server-side so it cannot be replayed.
+    try { await fetch('/api/auth/logout',{method:'POST'}); } catch (_) {}
+    sessionStorage.clear();
+    window.location.href='eclogin.html';
+  }
 
   // Init
   loadElectionSelector().then(loadDashboard);
-  fetch('/api/ec/pending-students').then(r=>r.json()).then(d=>{
-    const n=(d.pending||[]).length;
-    const cnt=document.getElementById('pendingCount');
-    if (n>0) { cnt.textContent=n; cnt.style.display='inline-block'; }
-  });
+  refreshPendingBadge();
+  loadChangeRequests();   // v5: badge the sidebar on load
 </script>
 </body>
 </html>

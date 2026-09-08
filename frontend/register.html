@@ -64,6 +64,21 @@
     .login-link{text-align:center;margin-top:20px;font-size:.82rem;color:var(--muted)}
     .login-link a{color:var(--teal);text-decoration:none;font-weight:600}
 
+    /* v5 — roster lookup result */
+    .roster-box{margin:-6px 0 16px;padding:12px 14px;border-radius:10px;font-size:.83rem;line-height:1.55;display:none}
+    .roster-box.found{display:block;background:#f0fdf4;border:1px solid #bbf7d0;color:#15803d}
+    .roster-box.warn{display:block;background:#fffbeb;border:1px solid #fde68a;color:#b45309}
+
+    /* v5 — wallet ownership proof */
+    .wallet-panel{border:1.5px dashed var(--border);border-radius:12px;padding:18px;margin-bottom:18px;background:#fafbfe;transition:all .2s}
+    .wallet-panel h4{font-size:.9rem;font-weight:700;margin-bottom:5px}
+    .wallet-panel p{font-size:.79rem;color:var(--muted);line-height:1.6;margin-bottom:14px}
+    .wallet-panel.done{border-style:solid;border-color:var(--green);background:#f0fdf4}
+    .wallet-addr{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.76rem;color:var(--teal-dark);word-break:break-all;margin-top:10px}
+    .btn-wallet{width:100%;padding:12px;border-radius:10px;border:1.5px solid var(--border);background:#fff;color:var(--navy);font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:.88rem;cursor:pointer;transition:all .2s}
+    .btn-wallet:hover:not(:disabled){border-color:var(--teal);color:var(--teal-dark)}
+    .btn-wallet:disabled{opacity:.55;cursor:not-allowed}
+
     @media(max-width:700px){.page{grid-template-columns:1fr}.left{display:none}}
   </style>
 </head>
@@ -77,8 +92,8 @@
       <p class="left-desc">Register once and participate in all future UTAR SRC elections securely and transparently.</p>
       <div class="steps">
         <div class="step"><div class="step-num">1</div><div class="step-text"><strong>Fill in your details</strong>Use your official UTAR student ID and email</div></div>
-        <div class="step"><div class="step-num">2</div><div class="step-text"><strong>Await EC approval</strong>The Election Committee will verify and approve your account</div></div>
-        <div class="step"><div class="step-num">3</div><div class="step-text"><strong>Link your wallet</strong>Election Committee links your MetaMask wallet after approval</div></div>
+        <div class="step"><div class="step-num">2</div><div class="step-text"><strong>Link your wallet</strong>Connect MetaMask and sign once to prove the wallet is yours</div></div>
+        <div class="step"><div class="step-num">3</div><div class="step-text"><strong>Get verified</strong>Checked against the student roster, usually straight away</div></div>
         <div class="step"><div class="step-num">4</div><div class="step-text"><strong>Cast your vote</strong>Log in and vote in any active election you are eligible for</div></div>
       </div>
     </div>
@@ -93,13 +108,15 @@
     <div class="form-row">
       <div class="field">
         <label>Student ID</label>
-        <input type="text" id="studentId" placeholder="e.g. 2207492" maxlength="20"/>
+        <input type="text" id="studentId" placeholder="e.g. 2207492" maxlength="20" onblur="lookupRoster()"/>
       </div>
       <div class="field">
         <label>Full Name</label>
         <input type="text" id="fullName" placeholder="As per student card"/>
       </div>
     </div>
+
+    <div class="roster-box" id="rosterBox"></div>
 
     <div class="field">
       <label>UTAR Email</label>
@@ -130,6 +147,15 @@
       </select>
     </div>
 
+    <div class="field">
+      <label>Campus</label>
+      <select id="campus">
+        <option value="Kampar">Kampar</option>
+        <option value="Sungai Long">Sungai Long</option>
+      </select>
+      <div class="hint" id="campusHint">Your campus decides which SRC election you belong to (Reg 2(1)).</div>
+    </div>
+
     <div class="form-row">
       <div class="field">
         <label>Password</label>
@@ -144,6 +170,20 @@
     </div>
     <div class="hint" style="font-size:.78rem;color:var(--muted);margin-bottom:14px;margin-top:-8px">
       Password must be at least 8 characters with a mix of letters and numbers.
+    </div>
+
+    <div class="wallet-panel" id="walletPanel">
+      <h4>Link your MetaMask wallet</h4>
+      <p>
+        Your ballot is cast from this wallet, so we check that it is really yours.
+        You will be asked to sign a short message &mdash; it costs no gas, transfers
+        nothing and casts no vote. Skip it if MetaMask is not set up yet; you can
+        link a wallet later from your profile page.
+      </p>
+      <button type="button" class="btn-wallet" id="walletBtn" onclick="verifyWallet()">
+        Connect and verify wallet
+      </button>
+      <div class="wallet-addr" id="walletAddr"></div>
     </div>
 
     <button class="btn" id="registerBtn" onclick="handleRegister()">Create Account</button>
@@ -178,11 +218,188 @@
     el.className = `msg ${type} visible`;
   }
 
+  /* ═══════════════════════════════════════════════════════════
+     v5 — wallet ownership proof, held until the form is submitted
+  ═══════════════════════════════════════════════════════════ */
+  let verifiedWallet = null, walletNonce = null, walletSignature = null;
+
+  function esc(s) {
+    return String(s ?? '').replace(/[&<>"']/g, c =>
+      ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+  }
+
+  /* ── Campus, carried over from the login page ──────────────
+     login.html now asks which campus the student is voting from
+     before it shows the sign-in form. Someone who arrived here
+     from the Kampar portal is registering at Kampar, so offering
+     Sungai Long as well is just a way to pick the wrong one. */
+  const CAMPUSES = ['Kampar', 'Sungai Long'];
+  let lockedCampus = null;
+
+  function setCampusOptions(list, selected) {
+    const sel = document.getElementById('campus');
+    sel.innerHTML = list.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+    if (selected) sel.value = selected;
+  }
+
+  (function applyChosenCampus() {
+    let campus = new URLSearchParams(location.search).get('campus');
+    if (!CAMPUSES.includes(campus)) {
+      try { campus = sessionStorage.getItem('loginCampus'); } catch (_) { campus = null; }
+    }
+    if (!CAMPUSES.includes(campus)) return;   // no campus chosen — leave both on offer
+
+    lockedCampus = campus;
+    setCampusOptions([campus], campus);
+    document.getElementById('campusHint').innerHTML =
+      `Set from the ${esc(campus)} Campus portal you came from. ` +
+      `<a href="login.html">Registering at the other campus?</a>`;
+  })();
+
+  /* The roster decides which campus a student belongs to, and the
+     campus decides which election they vote in. Someone on the wrong
+     registration page is refused here and sent to the right one —
+     quietly moving them to the other campus would mean the page said
+     one thing and the account became another. */
+  let wrongCampus = null;
+
+  function blockForCampus(correct) {
+    wrongCampus = correct;
+    const btn = document.getElementById('registerBtn');
+    btn.disabled = true;
+    btn.textContent = `Register at ${correct} Campus instead`;
+    document.getElementById('campusHint').innerHTML =
+      `<span style="color:#dc2626;font-weight:600">This student ID belongs to ${esc(correct)} Campus.</span> ` +
+      `<a href="register.html?campus=${encodeURIComponent(correct)}">Open the ${esc(correct)} Campus registration page →</a>`;
+    showMsg(
+      `Refused — you cannot sign up on ${lockedCampus || 'this'} Campus. ` +
+      `Student ID ${document.getElementById('studentId').value.trim()} is registered at ${correct} Campus, ` +
+      `so you must use the ${correct} Campus registration page. Your campus decides which SRC election you vote in.`,
+      'error');
+  }
+
+  function clearCampusBlock() {
+    if (!wrongCampus) return;
+    wrongCampus = null;
+    const btn = document.getElementById('registerBtn');
+    btn.disabled = false;
+    btn.textContent = 'Create Account';
+    if (lockedCampus) {
+      document.getElementById('campusHint').innerHTML =
+        `Set from the ${esc(lockedCampus)} Campus portal you came from. ` +
+        `<a href="login.html">Registering at the other campus?</a>`;
+    }
+    const msg = document.getElementById('msg');
+    if (msg) { msg.className = 'msg'; msg.textContent = ''; }
+  }
+
+  function setCampusFromRoster(campus) {
+    if (!CAMPUSES.includes(campus)) return;
+    if (lockedCampus && campus !== lockedCampus) { blockForCampus(campus); return; }
+    clearCampusBlock();
+    document.getElementById('campus').value = campus;
+  }
+
+  /* ── Roster lookup ─────────────────────────────────────────
+     Tells the student where they stand before they fill in the
+     rest of the form, and fills in the fields the Department of
+     Student Affairs is authoritative for.                     */
+  async function lookupRoster() {
+    const sid = document.getElementById('studentId').value.trim();
+    const box = document.getElementById('rosterBox');
+    if (!sid) { box.className = 'roster-box'; clearCampusBlock(); return; }
+
+    try {
+      const r = await fetch(`/api/auth/roster-check/${encodeURIComponent(sid)}`);
+      const d = await r.json();
+
+      if (!d.found) {
+        // Not on the roster: no campus to conflict with, so a block
+        // left over from a previously typed ID has to be lifted.
+        clearCampusBlock();
+        box.className = 'roster-box warn';
+        box.textContent = d.message;
+        return;
+      }
+
+      // Pre-fill. The server uses the roster values regardless, so this
+      // is a convenience rather than something the student can game.
+      if (!document.getElementById('fullName').value) document.getElementById('fullName').value = d.student.full_name;
+      if (!document.getElementById('email').value)    document.getElementById('email').value    = d.student.email;
+      const facSel = document.getElementById('faculty');
+      [...facSel.options].forEach(o => { if (o.text === d.student.faculty) facSel.value = o.value; });
+      setCampusFromRoster(d.student.campus);
+
+      if (d.can_vote) {
+        box.className = 'roster-box found';
+        box.innerHTML = `Found in the student roster: <strong>${esc(d.student.full_name)}</strong>, `
+          + `${esc(d.student.campus)} Campus. `
+          + (d.can_stand
+              ? 'You are eligible to vote and to stand for the SRC.'
+              : `You are eligible to vote, but cannot stand for a post: ${esc(d.stand_blockers.join('; '))}`);
+      } else {
+        box.className = 'roster-box warn';
+        box.innerHTML = `Found in the roster, but not currently eligible to vote: `
+          + `${esc(d.vote_blockers.join('; '))}. You can still register &mdash; `
+          + `the Election Committee will review it.`;
+      }
+    } catch { /* the lookup is a convenience; registration works without it */ }
+  }
+
+  /* ── Wallet ownership proof ────────────────────────────────
+     1. Ask MetaMask which account the student wants to use.
+     2. Ask the server for a single-use message naming that
+        student and that address.
+     3. Sign it. The server recovers the signer and compares.  */
+  async function verifyWallet() {
+    const sid = document.getElementById('studentId').value.trim();
+    if (!sid) { showMsg('Enter your student ID first.', 'error'); return; }
+    if (!window.ethereum) {
+      showMsg('MetaMask was not detected. You can register now and link a wallet later from your profile.', 'error');
+      return;
+    }
+
+    const btn = document.getElementById('walletBtn');
+    btn.disabled = true;
+    try {
+      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      const address  = accounts[0];
+
+      const nr = await fetch('/api/wallet/nonce', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ student_id: sid, wallet_address: address }),
+      });
+      const nd = await nr.json();
+      if (!nr.ok) { showMsg(nd.error, 'error'); return; }
+
+      showMsg('Approve the signature request in MetaMask.', 'success');
+      const signature = await window.ethereum.request({
+        method: 'personal_sign', params: [nd.message, address],
+      });
+
+      verifiedWallet  = address;
+      walletNonce     = nd.nonce;
+      walletSignature = signature;
+
+      document.getElementById('walletPanel').classList.add('done');
+      btn.textContent = '✅ Wallet verified';
+      document.getElementById('walletAddr').textContent = address;
+      showMsg('Wallet verified. Finish the form to submit your registration.', 'success');
+    } catch (err) {
+      showMsg(err.code === 4001
+        ? 'You cancelled the signature request.'
+        : (err.message || 'Wallet verification failed.'), 'error');
+    } finally {
+      if (!verifiedWallet) btn.disabled = false;
+    }
+  }
+
   async function handleRegister() {
     const student_id = document.getElementById('studentId').value.trim();
     const full_name  = document.getElementById('fullName').value.trim();
     const email      = document.getElementById('email').value.trim();
     const faculty    = document.getElementById('faculty').value;
+    const campus     = document.getElementById('campus').value;
     const password   = document.getElementById('password').value;
     const confirm    = document.getElementById('confirmPassword').value;
 
@@ -193,6 +410,15 @@
     if (password !== confirm)
       return showMsg('Passwords do not match.', 'error');
 
+    const payload = { student_id, full_name, email, faculty, campus, password };
+
+    // Attach the wallet proof only if one was actually produced.
+    if (verifiedWallet) {
+      payload.wallet_address   = verifiedWallet;
+      payload.wallet_nonce     = walletNonce;
+      payload.wallet_signature = walletSignature;
+    }
+
     const btn = document.getElementById('registerBtn');
     btn.disabled = true;
     btn.textContent = 'Submitting...';
@@ -200,14 +426,32 @@
     try {
       const res  = await fetch('/api/auth/register', {
         method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ student_id, full_name, email, faculty, password }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
 
-      if (!res.ok) { showMsg(data.error || 'Registration failed.', 'error'); return; }
+      if (!res.ok) {
+        // The server has the last word. If it refuses on campus, hold
+        // the form closed here too and point at the right page —
+        // never quietly re-aim this form at the other campus.
+        if (data.correct_campus) {
+          btn.disabled = false;
+          blockForCampus(data.correct_campus);
+          return;
+        }
+        showMsg(data.error || 'Registration failed.', 'error');
+        btn.disabled = false;
+        btn.textContent = 'Create Account';
+        return;
+      }
 
-      showMsg('✅ Registration submitted successfully! Your account is pending SRC Committee approval. You will be able to log in once approved.', 'success');
-      btn.textContent = 'Submitted!';
+      showMsg(
+        (data.auto_approved ? '✅ ' : '📋 ') + data.message +
+        (data.wallet_linked ? '' : ' Remember to link a wallet from your profile before voting opens.'),
+        'success'
+      );
+      btn.textContent = data.auto_approved ? 'Verified!' : 'Submitted!';
+      setTimeout(() => { window.location.href = 'login.html'; }, 2800);
     } catch {
       showMsg('Network error. Is the server running?', 'error');
       btn.disabled = false;
@@ -219,5 +463,6 @@
     if (e.key === 'Enter') handleRegister();
   });
 </script>
+<script src="chat-widget.js"></script>
 </body>
 </html>

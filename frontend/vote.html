@@ -34,7 +34,11 @@
     .election-picker{background:var(--card);border:1px solid var(--border);border-radius:13px;padding:18px 22px;margin-bottom:24px}
     .picker-label{font-size:.75rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:9px;font-weight:500}
     .picker-select{width:100%;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:9px;padding:11px 13px;font-size:.92rem;color:var(--white);font-family:'DM Sans',sans-serif;outline:none;cursor:pointer}
-    .picker-select option{background:#112240}
+    /* The OS draws the open dropdown list, so each <option> needs its
+       own colours — otherwise the text falls back to black on the dark
+       background, or to the light page colour on a white list. */
+    select option{background:#112240;color:#f0f4ff}
+    select option:disabled{color:#8896b3}
     .picker-select:focus{border-color:var(--teal)}
 
     /* Status bar */
@@ -45,11 +49,22 @@
     .dot{width:7px;height:7px;border-radius:50%;background:var(--teal);animation:pulse 1.5s ease-in-out infinite;display:inline-block;margin-right:5px}
     @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 
+    /* Post filter */
+    .pos-filter{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:20px}
+    .pos-filter-label{font-size:.72rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:500}
+    .pos-chips{display:flex;gap:8px;flex-wrap:wrap}
+    .pos-chip{padding:6px 14px;border-radius:999px;font-size:.8rem;font-family:'DM Sans',sans-serif;cursor:pointer;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--muted);transition:all .18s}
+    .pos-chip:hover{color:var(--white);border-color:rgba(0,194,168,.45)}
+    .pos-chip.active{background:rgba(0,194,168,.16);border-color:var(--teal);color:var(--white);font-weight:500}
+    .pos-chip .n{opacity:.65;font-size:.74rem;margin-left:5px}
+
     /* Candidate cards */
     .candidates-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:18px;margin-bottom:28px}
     .candidate-card{background:var(--card);border:2px solid var(--border);border-radius:18px;padding:24px 20px;cursor:pointer;transition:all .22s;position:relative}
     .candidate-card:hover{border-color:rgba(0,194,168,.4);transform:translateY(-2px);box-shadow:0 10px 32px rgba(0,0,0,.25)}
     .candidate-card.selected{border-color:var(--teal);background:rgba(0,194,168,.07)}
+    .candidate-card.done{opacity:.5;cursor:default}
+    .candidate-card.done:hover{transform:none;border-color:var(--border);box-shadow:none}
     .candidate-avatar{width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--teal),var(--gold));display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700;color:var(--navy);margin-bottom:14px}
     .cname{font-family:'Syne',sans-serif;font-size:1.05rem;font-weight:700;margin-bottom:3px}
     .cpos{font-size:.8rem;color:var(--teal);font-weight:500;margin-bottom:3px}
@@ -79,7 +94,6 @@
     .field input,.field select,.field textarea{width:100%;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:9px;padding:10px 13px;font-size:.9rem;color:var(--white);font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s}
     .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--teal)}
     .field textarea{resize:vertical;min-height:80px}
-    .field select option{background:#112240}
     .form-row{display:grid;grid-template-columns:1fr 1fr;gap:13px}
     .btn-submit{padding:12px 28px;border-radius:10px;border:none;background:linear-gradient(135deg,var(--teal),#009d87);font-family:'Syne',sans-serif;font-size:.92rem;font-weight:700;color:var(--navy);cursor:pointer;transition:all .2s}
     .btn-submit:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(0,194,168,.3)}
@@ -109,6 +123,30 @@
 
     .loader{width:16px;height:16px;border:2px solid rgba(11,22,40,.3);border-top-color:var(--navy);border-radius:50%;animation:spin .7s linear infinite;display:none}
     @keyframes spin{to{transform:rotate(360deg)}}
+
+    /* ── v5: endorsers (Reg 20) ──────────────────────────── */
+    .endorser-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .endorser{border:1px solid var(--border);border-radius:11px;padding:14px;background:rgba(11,22,40,.4)}
+    .endorser-role{font-family:'Syne',sans-serif;font-size:.74rem;font-weight:700;color:var(--gold);margin-bottom:8px;letter-spacing:.04em}
+    .endorser input{width:100%;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:.9rem;color:var(--white);font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s}
+    .endorser input:focus{border-color:var(--teal)}
+    .resolved{font-size:.77rem;margin-top:8px;line-height:1.5;min-height:1.15em;color:var(--muted)}
+    .resolved.ok{color:#34d399}
+    .resolved.bad{color:var(--red)}
+
+    /* ── v5: endorsement progress ────────────────────────── */
+    .progress{display:flex;gap:8px;flex-wrap:wrap;margin-top:13px}
+    .pip{display:flex;align-items:center;gap:7px;padding:7px 12px;border-radius:9px;font-size:.77rem;border:1px solid var(--border);background:rgba(11,22,40,.4);color:var(--muted)}
+    .pip .dot2{width:7px;height:7px;border-radius:50%;background:var(--muted);flex-shrink:0}
+    .pip.confirmed{border-color:rgba(52,211,153,.35);color:#34d399}
+    .pip.confirmed .dot2{background:#34d399}
+    .pip.declined{border-color:rgba(248,113,113,.35);color:var(--red)}
+    .pip.declined .dot2{background:var(--red)}
+    .tag-grey{background:rgba(136,150,179,.12);color:var(--muted)}
+    .nav-badge{background:var(--gold);color:var(--navy);font-size:.68rem;font-weight:700;padding:1px 7px;border-radius:999px;margin-left:4px}
+
+    @media(max-width:640px){.endorser-grid{grid-template-columns:1fr}.form-row{grid-template-columns:1fr}}
+    @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
   </style>
 </head>
 <body>
@@ -117,6 +155,8 @@
   <div class="nav-brand">UTAR SRC Voting</div>
   <div style="display:flex;gap:8px;align-items:center">
     <span style="font-size:.82rem;color:var(--muted)">👤 <strong id="navUser" style="color:var(--white)">—</strong></span>
+    <button class="btn-sm" onclick="window.location.href='endorse.html'">🤝 Endorsements<span class="nav-badge" id="navEndBadge" style="display:none"></span></button>
+    <button class="btn-sm" onclick="window.location.href='profile.html'">👤 My Profile</button>
     <button class="btn-sm" onclick="window.location.href='results.html'">📊 Results</button>
     <button class="btn-sm" onclick="logout()">Sign Out</button>
   </div>
@@ -154,7 +194,7 @@
       <h2 class="voted-title">Vote Recorded on Blockchain</h2>
       <p class="voted-sub">Your ballot is permanently and immutably recorded. No one can alter it.</p>
       <button class="btn-submit" style="margin:0 auto 18px" onclick="window.location.href='results.html?election='+currentVoteElId">View Live Results</button>
-      <p class="tx-hash" id="txHashDisplay"></p>
+      <p class="tx-hash" id="txHashDisplay"></p><br>
     </div>
 
     <div class="empty" id="voteEmpty">
@@ -162,10 +202,24 @@
       <p>Select an active election above to see candidates and cast your vote.</p>
     </div>
 
+    <div class="pos-filter" id="posFilter" style="display:none">
+      <span class="pos-filter-label">Filter by post</span>
+      <div class="pos-chips" id="posChips"></div>
+    </div>
+
     <div class="candidates-grid" id="candidatesGrid" style="display:none"></div>
+    <div class="empty" id="noMatch" style="display:none">
+      <div class="empty-icon">🔍</div>
+      <p>No candidates are standing for that post in this election.</p>
+    </div>
 
     <div class="vote-panel" id="votePanel" style="display:none">
-      <div style="font-size:.92rem;color:var(--muted)">Selected: <strong id="selectedName" style="color:var(--white)">None</strong></div>
+      <div>
+        <div style="font-size:.92rem;color:var(--muted)">Selected: <strong id="selectedName" style="color:var(--white)">None</strong></div>
+        <!-- One ballot per post, so the voter helps elect the whole
+             council rather than a single office holder. -->
+        <div style="font-size:.76rem;color:var(--gold);margin-top:5px" id="voteHint">⚠️ One vote per post. Once a vote is on the blockchain it cannot be changed.</div>
+      </div>
       <button class="btn-vote" id="voteBtn" disabled onclick="castVote()">
         <span id="voteBtnText">Cast Vote</span>
         <div class="loader" id="voteLoader"></div>
@@ -179,7 +233,7 @@
   <div id="tab-nominate" class="tab-content">
 
     <div class="notice notice-info">
-      📋 <strong>How nomination works:</strong> Select an election with open nominations, fill in your details below, and submit. The Election Committee will review your nomination and notify you of the outcome. If approved, you will automatically appear as a candidate on the blockchain.
+      📋 <strong>How nomination works:</strong> Choose an election with open nominations and name your four endorsers by student ID. Each of them confirms from their own account — you cannot confirm for them. Once all four have confirmed, the Election Committee reviews your nomination. If approved, you appear as a candidate on the blockchain.
     </div>
 
     <div class="election-picker">
@@ -193,28 +247,23 @@
       🔒 Nominations are not currently open for this election. Check back during the nomination period.
     </div>
 
+    <!-- Why the form is not being offered: already standing, or barred
+         by Reg 4. Stating the reason beats a form that gets refused. -->
+    <div class="notice notice-warn" id="nomBlockedNotice" style="display:none"></div>
+
     <div id="nomForm" style="display:none">
       <div class="nom-card">
         <div class="nom-card-title">📝 Submit Your Nomination</div>
         <div class="nom-card-sub">
-          You can nominate yourself for one position per election. Your proposer and seconder must be registered students from the same campus (Regulation XIII, Reg 20).
+          You may stand for one post per election (Reg 20(1)). Your nomination needs one proposer, one seconder and two supporters, all registered on this campus. Each of them confirms from their own account.
         </div>
 
         <div class="field">
           <label>Position you are running for</label>
           <select id="nomPosition">
             <option value="">— Select position —</option>
-            <option>Chairperson</option>
-            <option>Vice Chairperson</option>
-            <option>Secretary</option>
-            <option>Treasurer</option>
-            <option>Auditor 1</option>
-            <option>Auditor 2</option>
-            <option>Faculty/Institute Representative</option>
-            <option>Campus Wide Representative</option>
-            <option>International Representative</option>
-            <option>Postgraduate Representative</option>
           </select>
+          <div class="resolved" id="nomPositionHint" style="margin-top:8px"></div>
         </div>
 
         <div class="field">
@@ -222,26 +271,34 @@
           <textarea id="nomManifesto" placeholder="Describe your goals and what you will do for students if elected..."></textarea>
         </div>
 
-        <div style="margin-bottom:16px">
-          <div style="font-size:.78rem;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:12px">Proposer &amp; Seconder (Reg 20)</div>
-          <div class="form-row">
-            <div class="field">
-              <label>Proposer full name</label>
-              <input type="text" id="nomProposerName" placeholder="Proposer's name"/>
+        <div style="margin-bottom:18px">
+          <div style="font-size:.78rem;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Your four endorsers (Reg 20(1))</div>
+          <p style="font-size:.83rem;color:var(--muted);line-height:1.6;margin-bottom:14px;max-width:64ch">
+            Enter student IDs only — the system looks up each person and asks them
+            to confirm. All four must be registered on this system, be on the same
+            campus, and must not already be endorsing someone else for this post.
+          </p>
+
+          <div class="endorser-grid">
+            <div class="endorser">
+              <div class="endorser-role">PROPOSER</div>
+              <input type="text" id="endProposer" placeholder="Student ID, e.g. 2207001" onblur="resolveEndorser('proposer')"/>
+              <div class="resolved" id="resProposer"></div>
             </div>
-            <div class="field">
-              <label>Proposer student ID</label>
-              <input type="text" id="nomProposerId" placeholder="e.g. 2207001"/>
+            <div class="endorser">
+              <div class="endorser-role">SECONDER</div>
+              <input type="text" id="endSeconder" placeholder="Student ID" onblur="resolveEndorser('seconder')"/>
+              <div class="resolved" id="resSeconder"></div>
             </div>
-          </div>
-          <div class="form-row">
-            <div class="field">
-              <label>Seconder full name</label>
-              <input type="text" id="nomSeconderName" placeholder="Seconder's name"/>
+            <div class="endorser">
+              <div class="endorser-role">SUPPORTER 1</div>
+              <input type="text" id="endSupporter_1" placeholder="Student ID" onblur="resolveEndorser('supporter_1')"/>
+              <div class="resolved" id="resSupporter_1"></div>
             </div>
-            <div class="field">
-              <label>Seconder student ID</label>
-              <input type="text" id="nomSeconderId" placeholder="e.g. 2207002"/>
+            <div class="endorser">
+              <div class="endorser-role">SUPPORTER 2</div>
+              <input type="text" id="endSupporter_2" placeholder="Student ID" onblur="resolveEndorser('supporter_2')"/>
+              <div class="resolved" id="resSupporter_2"></div>
             </div>
           </div>
         </div>
@@ -255,8 +312,19 @@
 
     <!-- My previous nominations -->
     <div class="nom-card" id="myNomsCard" style="display:none">
-      <div class="nom-card-title">📋 My Nomination History</div>
+      <div class="nom-card-title">📋 Nominations where I am standing</div>
       <div class="my-noms-list" id="myNomsList"></div>
+    </div>
+
+    <!-- Standing for a post and endorsing someone else are two
+         different things. Showing only the first made a proposer's own
+         nomination card read as if it described their proposer role. -->
+    <div class="nom-card" id="givenCard" style="display:none">
+      <div class="nom-card-title">🤝 Nominations I have endorsed</div>
+      <div class="nom-card-sub" style="margin-bottom:16px">
+        People you are backing under Reg 20(1). You are their proposer, seconder or supporter — not the nominee.
+      </div>
+      <div class="my-noms-list" id="givenList"></div>
     </div>
 
   </div>
@@ -268,22 +336,48 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
 <script>
   let user, elections=[], selectedVoteEl=null, selectedNomEl=null;
-  let selectedCandidateId=null, currentVoteElId=null, contractInfo=null;
+  let selectedCandidateId=null, selectedPosition=null, currentVoteElId=null, contractInfo=null;
 
   async function init() {
     user=JSON.parse(sessionStorage.getItem('user')||'null');
     if (!user) { window.location.href='login.html'; return; }
+
+    // v5: an account still awaiting verification belongs on the
+    // profile page, where it can actually do something about it.
+    if (user.is_approved === 0) { window.location.href='profile.html'; return; }
+
     document.getElementById('navUser').textContent=user.full_name;
     try { contractInfo=await fetch('/contract.json').then(r=>r.json()); } catch {}
     await loadAllElections();
     await loadMyNominations();
+    loadEndorsementBadge();
+  }
+
+  // Shows the nominee how many people are waiting on them.
+  async function loadEndorsementBadge() {
+    try {
+      const r=await fetch(`/api/endorsements/pending/${user.id}`); const d=await r.json();
+      const b=document.getElementById('navEndBadge');
+      if (d.pending_count>0) { b.textContent=d.pending_count; b.style.display='inline-block'; }
+    } catch {}
+  }
+
+  function esc(s) {
+    return String(s ?? '').replace(/[&<>"']/g, c =>
+      ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
   }
 
   async function loadAllElections() {
-    const r=await fetch('/api/elections'); const d=await r.json();
+    // Only this student's campus. Kampar and Sungai Long run separate
+    // elections, and the server would refuse a cross-campus vote or
+    // nomination anyway — offering them here only invites the error.
+    const url = user?.campus ? `/api/elections?campus=${encodeURIComponent(user.campus)}` : '/api/elections';
+    const r=await fetch(url); const d=await r.json();
     elections=d.elections||[];
     const activeEls=elections.filter(e=>e.status==='active'||e.status==='ended');
-    const nomEls=elections.filter(e=>e.status==='nomination'||e.status==='setup'||e.status==='active');
+    // v5: only elections actually in the nomination phase. Offering
+    // 'setup' or 'active' ones just produced a server rejection.
+    const nomEls=elections.filter(e=>e.status==='nomination');
 
     const vSel=document.getElementById('voteElSelect');
     vSel.innerHTML='<option value="">— Choose an election —</option>'+
@@ -343,59 +437,330 @@
     } catch {}
   }
 
-  async function loadCandidates() {
-    const r=await fetch(`/api/elections/${selectedVoteEl.id}/candidates`); const d=await r.json();
-    const candidates=d.candidates||[];
-    const grid=document.getElementById('candidatesGrid');
-    if (!candidates.length) {
-      document.getElementById('voteEmpty').style.display='block';
-      document.getElementById('voteEmpty').innerHTML='<div style="font-size:2.5rem;margin-bottom:12px">📭</div><p>No candidates registered for this election yet.</p>';
-      return;
-    }
-    grid.style.display='grid';
-    grid.innerHTML=candidates.map(c=>`
-      <div class="candidate-card" id="card-${c.blockchain_id}" onclick="selectCandidate(${c.blockchain_id},'${c.full_name.replace(/'/g,"\\'")}')">
-        <div class="check-circle">✓</div>
-        <div class="candidate-avatar">${c.full_name.charAt(0)}</div>
-        <div class="cname">${c.full_name}</div>
-        <div class="cpos">${c.position}</div>
-        <div class="cfac">${c.faculty}</div>
-        <div class="cmanifesto">"${c.manifesto||'No manifesto provided.'}"</div>
-      </div>`).join('');
-    document.getElementById('votePanel').style.display='flex';
+  let allCandidates=[], posFilterValue='', votedPosts=new Set();
+
+  /* Which posts has this wallet already voted for? Read straight from
+     the contract, because the chain is the record — the database never
+     sees a ballot. Silent on failure: MetaMask may not be connected
+     yet, and the contract enforces the rule regardless. */
+  /* The wallet registered to THIS student, read from the server rather
+     than from the session copy, which goes stale the moment a student
+     links or changes a wallet. Everything about the ballot keys off
+     this address — never off whichever account MetaMask happens to
+     have selected, which may belong to an entirely different student. */
+  let myWallet=null;
+  async function loadMyWallet() {
+    myWallet=null;
+    try {
+      const r=await fetch(`/api/profile/${user.id}`);
+      const d=await r.json();
+      if (r.ok && d.user?.wallet_address) myWallet=d.user.wallet_address;
+    } catch (e) { console.warn('Could not read your linked wallet:', e.message); }
+    return myWallet;
   }
 
-  function selectCandidate(id, name) {
+  async function loadVotedPosts() {
+    votedPosts=new Set();
+    try {
+      if (!contractInfo || !selectedVoteEl) return;
+      // Which posts *this student* has voted for — asked about their own
+      // registered address, so signing in as someone else can never show
+      // another student's ballot as your own.
+      const addr = myWallet || await loadMyWallet();
+      if (!addr || !window.ethereum) return;
+      const provider=new ethers.providers.Web3Provider(window.ethereum);
+      const c=new ethers.Contract(contractInfo.address, contractInfo.abi, provider);
+      const [ids,voted]=await c.getVotedPosts(selectedVoteEl.blockchain_id, addr);
+      ids.forEach((id,i)=>{
+        if (voted[i]) {
+          const cand=allCandidates.find(x=>Number(x.blockchain_id)===Number(id));
+          if (cand) votedPosts.add(cand.position);
+        }
+      });
+    } catch (e) { console.warn('Could not read voted posts:', e.message); }
+  }
+
+  async function loadCandidates() {
+    const r=await fetch(`/api/elections/${selectedVoteEl.id}/candidates`); const d=await r.json();
+    allCandidates=d.candidates||[];
+    posFilterValue='';
+    if (!allCandidates.length) {
+      document.getElementById('voteEmpty').style.display='block';
+      document.getElementById('voteEmpty').innerHTML='<div style="font-size:2.5rem;margin-bottom:12px">📭</div><p>No candidates registered for this election yet.</p>';
+      document.getElementById('posFilter').style.display='none';
+      return;
+    }
+    await loadVotedPosts();
+    renderPosFilter();
+    renderCandidates();
+    document.getElementById('votePanel').style.display='flex';
+    updateVoteHint();
+  }
+
+  function updateVoteHint() {
+    const posts=new Set(allCandidates.map(c=>c.position));
+    const done=[...posts].filter(p=>votedPosts.has(p)).length;
+    const hint=document.getElementById('voteHint');
+    if (!hint) return;
+    // Naming the wallet makes a mismatch obvious before they click,
+    // rather than after MetaMask has already opened.
+    const who = myWallet ? ` · Voting as ${myWallet.slice(0,6)}…${myWallet.slice(-4)}` : '';
+    hint.textContent = (done
+      ? `✅ You have voted for ${done} of ${posts.size} post${posts.size===1?'':'s'}. One vote per post — a vote on the blockchain cannot be changed.`
+      : `⚠️ One vote per post — you may vote once for each of the ${posts.size} post${posts.size===1?'':'s'}. A vote on the blockchain cannot be changed.`) + who;
+  }
+
+  /* A council ballot lists ten posts under Reg 2(1), so on a full
+     roll the grid is long. The chips narrow it to one post at a
+     time; they only filter the view and change nothing about the
+     ballot itself. */
+  function renderPosFilter() {
+    const counts=new Map();
+    allCandidates.forEach(c=>counts.set(c.position,(counts.get(c.position)||0)+1));
+    const chips=[`<button class="pos-chip ${posFilterValue===''?'active':''}" onclick="setPosFilter('')">All posts<span class="n">${allCandidates.length}</span></button>`]
+      .concat([...counts.entries()].map(([pos,n])=>
+        `<button class="pos-chip ${posFilterValue===pos?'active':''}" onclick="setPosFilter('${pos.replace(/'/g,"\\'")}')">${votedPosts.has(pos)?'✓ ':''}${esc(pos)}<span class="n">${n}</span></button>`));
+    document.getElementById('posChips').innerHTML=chips.join('');
+    // One post on the ballot is not worth a filter.
+    document.getElementById('posFilter').style.display = counts.size>1 ? 'flex' : 'none';
+  }
+
+  function setPosFilter(pos) {
+    posFilterValue=pos;
+    renderPosFilter();
+    renderCandidates();
+  }
+
+  function renderCandidates() {
+    const grid=document.getElementById('candidatesGrid');
+    const shown=posFilterValue ? allCandidates.filter(c=>c.position===posFilterValue) : allCandidates;
+    document.getElementById('noMatch').style.display = shown.length ? 'none' : 'block';
+    grid.style.display = shown.length ? 'grid' : 'none';
+    grid.innerHTML=shown.map(c=>{
+      // A post already voted for is settled: its candidates stay on
+      // display so the ballot still reads as a whole, but they can no
+      // longer be picked. The contract would refuse anyway.
+      const done=votedPosts.has(c.position);
+      return `
+      <div class="candidate-card ${done?'done':''} ${selectedCandidateId===c.blockchain_id?'selected':''}" id="card-${c.blockchain_id}"
+           ${done?'':`onclick="selectCandidate(${c.blockchain_id},'${c.full_name.replace(/'/g,"\\'")}','${c.position.replace(/'/g,"\\'")}')"`}>
+        <div class="check-circle">✓</div>
+        <div class="candidate-avatar">${c.full_name.charAt(0)}</div>
+        <div class="cname">${esc(c.full_name)}</div>
+        <div class="cpos">${esc(c.position)}${done?' · voted':''}</div>
+        <div class="cfac">${esc(c.faculty)}</div>
+        <div class="cmanifesto">"${esc(c.manifesto||'No manifesto provided.')}"</div>
+      </div>`;
+    }).join('');
+  }
+
+  function selectCandidate(id, name, position) {
+    if (votedPosts.has(position)) {
+      toast(`You have already voted for ${position}.`,'error');
+      return;
+    }
     document.querySelectorAll('.candidate-card').forEach(el=>el.classList.remove('selected'));
     if (selectedCandidateId===id) {
-      selectedCandidateId=null;
+      selectedCandidateId=null; selectedPosition=null;
       document.getElementById('selectedName').textContent='None';
       document.getElementById('voteBtn').disabled=true;
+      document.getElementById('voteBtnText').textContent='Cast Vote';
     } else {
-      selectedCandidateId=id;
-      document.getElementById(`card-${id}`).classList.add('selected');
-      document.getElementById('selectedName').textContent=name;
+      selectedCandidateId=id; selectedPosition=position;
+      // The card can be hidden behind a post filter, so guard the lookup.
+      document.getElementById(`card-${id}`)?.classList.add('selected');
+      document.getElementById('selectedName').textContent=`${name} — ${position}`;
       document.getElementById('voteBtn').disabled=false;
+      document.getElementById('voteBtnText').textContent=`Vote for ${position}`;
     }
+  }
+
+  /* MetaMask reports almost every on-chain failure as "Internal
+     JSON-RPC error", which tells a student nothing. The real reason is
+     usually nested a level or two down, or is something we can check
+     ourselves first. This turns all of it into one plain sentence. */
+  function explainWalletError(err) {
+    const code = err?.code ?? err?.error?.code ?? err?.data?.code;
+    if (code === 4001 || code === 'ACTION_REJECTED')
+      return 'You rejected the transaction in MetaMask, so no vote was cast. Nothing has changed.';
+    if (code === -32002)
+      return 'MetaMask is already waiting for you. Open the MetaMask extension and confirm the pending request.';
+    if (code === 4100)
+      return 'MetaMask has not authorised this account. Open MetaMask, unlock it, and connect this site.';
+
+    // MetaMask buries the node's real complaint several layers down, and
+    // the depth differs by error type, so walk the object for any
+    // message-like string rather than guessing at fixed paths.
+    const found = [];
+    (function dig(o, depth) {
+      if (!o || depth > 5 || typeof o !== 'object') return;
+      for (const k of ['reason', 'message', 'shortMessage', 'details']) {
+        if (typeof o[k] === 'string' && o[k]) found.push(o[k]);
+      }
+      for (const k of ['data', 'error', 'originalError', 'info', 'cause', 'body']) {
+        if (o[k] && typeof o[k] === 'object') dig(o[k], depth + 1);
+        else if (typeof o[k] === 'string' && o[k].startsWith('{')) {
+          try { dig(JSON.parse(o[k]), depth + 1); } catch (_) {}
+        }
+      }
+    })(err, 0);
+    const nested = found.join(' | ');
+
+    // Ganache is usually restarted several times while a system like
+    // this is being built. MetaMask keeps its own record of how many
+    // transactions an account has sent, and after a restart that record
+    // is ahead of the fresh chain — so the next transaction is rejected
+    // for a nonce nobody can see. It looks exactly like a broken wallet.
+    if (/nonce|already known|replacement transaction|known transaction/i.test(nested))
+      return 'MetaMask is out of step with the blockchain — this happens when Ganache is restarted. ' +
+             'In MetaMask open Settings → Advanced → Clear activity tab data, then try voting again. ' +
+             'Your account and your vote are unaffected.';
+    if (/header not found|unknown block|missing trie node/i.test(nested))
+      return 'MetaMask is still holding data from an older blockchain session. ' +
+             'In MetaMask open Settings → Advanced → Clear activity tab data, then reload this page.';
+
+    if (/already voted for this post/i.test(nested))
+      return 'You have already voted for this post. Each post takes one vote, and a ballot on the blockchain cannot be cast twice.';
+    if (/already voted/i.test(nested))
+      return 'You have already voted. A ballot on the blockchain cannot be cast twice.';
+    if (/not registered/i.test(nested))
+      return 'Your wallet is not registered for this election. Ask the Election Committee to register you, then try again.';
+    if (/voting is not open|not started|period ended/i.test(nested))
+      return 'Voting is not open for this election right now.';
+    if (/invalid candidate|candidate not found/i.test(nested))
+      return 'That candidate is no longer on the ballot. Refresh the page and try again.';
+    if (/insufficient funds/i.test(nested))
+      return 'This wallet has no ETH to pay the transaction fee. Ask the Election Committee for help.';
+    if (/unlock|locked/i.test(nested))
+      return 'MetaMask is locked. Open the extension, unlock it, then press Cast Vote again.';
+
+    // A revert reason we did not anticipate is still better than the
+    // wrapper text — but never show the bare "Internal JSON-RPC error".
+    const m = nested.match(/SRCVoting: [^"|]+/);
+    if (m) return m[0];
+
+    // "Internal JSON-RPC error" is MetaMask's way of saying the node
+    // refused and it did not understand why. On a local chain that is
+    // nearly always stale MetaMask state, so lead with the fix rather
+    // than with advice the student has already followed.
+    if (/internal json-rpc/i.test(nested) || !nested) {
+      console.error('[vote] unhandled wallet error — full object follows:', err);
+      const detail = nested.replace(/internal json-rpc error\.?/ig, '').replace(/\s*\|\s*/g, ' ').trim();
+      return 'MetaMask refused the transaction without saying why. This is almost always MetaMask holding stale ' +
+             'data from an earlier Ganache session.\n\nFix: MetaMask → Settings → Advanced → Clear activity tab data, ' +
+             'then reload and vote again.\n\nIf that does not help, check MetaMask is on the Ganache network ' +
+             '(chain ID 1337) and that this account is the one registered to vote.' +
+             (detail ? `\n\nTechnical detail: ${detail}` : '');
+    }
+    return nested.split(' | ')[0];
   }
 
   async function castVote() {
     if (!selectedCandidateId||!selectedVoteEl) return;
-    if (!window.ethereum) { toast('MetaMask is required to vote.','error'); return; }
+    if (!window.ethereum) {
+      toast('MetaMask was not detected. Install the MetaMask extension, then sign in again to vote.','error');
+      return;
+    }
     if (!contractInfo) { toast('Contract not found. Contact the Election Committee.','error'); return; }
     setVoteLoading(true);
     try {
       const provider=new ethers.providers.Web3Provider(window.ethereum);
-      await provider.send('eth_requestAccounts',[]);
-      const signer=provider.getSigner();
-      const contract=new ethers.Contract(contractInfo.address, contractInfo.abi, signer);
-      const tx=await contract.vote(selectedVoteEl.blockchain_id, selectedCandidateId);
+
+      // Ask for the account first. If MetaMask is closed or locked this
+      // is what prompts it, and the failure here is far clearer than a
+      // revert later on.
+      let accounts;
+      try {
+        accounts = await provider.send('eth_requestAccounts',[]);
+      } catch (e) {
+        toast(explainWalletError(e),'error'); return;
+      }
+      if (!accounts || !accounts.length) {
+        toast('No MetaMask account is connected. Open MetaMask, unlock it, and connect this site.','error');
+        return;
+      }
+      const from = accounts[0];
+
+      // The account MetaMask has selected must be the one registered to
+      // the student who is signed in. Without this a student signed in
+      // as themselves, with MetaMask left on a classmate's account,
+      // spends the classmate's ballot — the contract would accept it,
+      // because that address is registered; it simply is not theirs.
+      const mine = myWallet || await loadMyWallet();
+      if (!mine) {
+        toast('No wallet is linked to your account yet. Open My Profile and link your MetaMask wallet, then ask the Election Committee to register you.','error');
+        return;
+      }
+      if (from.toLowerCase() !== mine.toLowerCase()) {
+        toast(`MetaMask is on a different account. Your ballot is tied to ${mine.slice(0,6)}…${mine.slice(-4)}, `
+            + `but MetaMask has ${from.slice(0,6)}…${from.slice(-4)} selected. Switch account in MetaMask and try again.`,'error');
+        return;
+      }
+
+      // Same chain as the contract? A wallet left on Ethereum Mainnet
+      // is the most common cause of "Internal JSON-RPC error".
+      const net = await provider.getNetwork();
+      if (contractInfo.chainId && Number(net.chainId) !== Number(contractInfo.chainId)) {
+        toast(`MetaMask is on the wrong network. Switch it to the election network (chain ID ${contractInfo.chainId}) and try again.`,'error');
+        return;
+      }
+
+      const contract=new ethers.Contract(contractInfo.address, contractInfo.abi, provider.getSigner());
+
+      // Ask the contract about this wallet before spending anything, so
+      // "you are not registered" arrives as a sentence, not a revert.
+      const status = await contract.getVoterStatus(selectedVoteEl.blockchain_id, from);
+      if (!status[0]) {
+        toast(`The wallet ${from.slice(0,6)}…${from.slice(-4)} is not registered for this election. Check you selected the right MetaMask account, or ask the Election Committee to register it.`,'error');
+        return;
+      }
+      if (selectedPosition && await contract.hasVotedForPost(selectedVoteEl.blockchain_id, from, selectedPosition)) {
+        toast(`You have already voted for ${selectedPosition}.`,'error');
+        votedPosts.add(selectedPosition); renderPosFilter(); renderCandidates(); updateVoteHint();
+        return;
+      }
+
+      // Estimate the gas ourselves and add headroom. A vote costs about
+      // 105,000 gas; a wallet that falls back to a default limit (Ganache
+      // uses 90,000) sends a transaction that runs out of gas and reports
+      // it as an unexplained failure. Estimating here also means a revert
+      // surfaces now, with its reason intact, rather than as a mined
+      // failure nobody can read.
+      let overrides = {};
+      try {
+        const est = await contract.estimateGas.vote(selectedVoteEl.blockchain_id, selectedCandidateId, { from });
+        overrides.gasLimit = est.mul(125).div(100);
+      } catch (e) {
+        // Estimation itself reverted: that carries the real reason.
+        const why = explainWalletError(e);
+        toast(why, 'error');
+        return;
+      }
+
+      const tx=await contract.vote(selectedVoteEl.blockchain_id, selectedCandidateId, overrides);
       toast('Transaction submitted. Waiting for confirmation...','success');
       const receipt=await tx.wait();
-      showVotedState(receipt.transactionHash);
-      toast('✅ Vote permanently recorded on blockchain!','success');
+
+      // One post is done; the rest of the council is still to be voted
+      // on, so the ballot stays open rather than closing outright.
+      votedPosts.add(selectedPosition);
+      selectedCandidateId=null; selectedPosition=null;
+      document.getElementById('selectedName').textContent='None';
+      document.getElementById('voteBtn').disabled=true;
+      document.getElementById('voteBtnText').textContent='Cast Vote';
+      renderPosFilter(); renderCandidates(); updateVoteHint();
+
+      const posts=new Set(allCandidates.map(c=>c.position));
+      const remaining=[...posts].filter(p=>!votedPosts.has(p));
+      if (remaining.length) {
+        toast(`✅ Vote recorded on the blockchain. ${remaining.length} post${remaining.length===1?'':'s'} left to vote for.`,'success');
+      } else {
+        showVotedState(receipt.transactionHash);
+        toast('✅ You have now voted for every post. All ballots are on the blockchain.','success');
+      }
     } catch (err) {
-      toast(err.reason||err.message||'Transaction failed.','error');
+      console.error(err);
+      toast(explainWalletError(err),'error');
     } finally { setVoteLoading(false); }
   }
 
@@ -413,30 +778,134 @@
   }
 
   // ── NOMINATE TAB ───────────────────────────────────────────
-  function onNomElChange() {
+  async function onNomElChange() {
     const id=document.getElementById('nomElSelect').value;
     selectedNomEl=elections.find(e=>e.id==id)||null;
     const form=document.getElementById('nomForm');
     const notice=document.getElementById('nomClosedNotice');
-    if (!selectedNomEl) { form.style.display='none'; notice.style.display='none'; return; }
-    if (selectedNomEl.status==='nomination') {
-      form.style.display='block'; notice.style.display='none';
-    } else {
-      form.style.display='none'; notice.style.display='block';
+    const blocked=document.getElementById('nomBlockedNotice');
+    form.style.display='none'; notice.style.display='none'; blocked.style.display='none';
+    if (!selectedNomEl) return;
+    if (selectedNomEl.status!=='nomination') { notice.style.display='block'; return; }
+
+    // Reg 4 and Reg 20(1) are decided before the form is offered, so a
+    // student who cannot stand — or who is already standing — is told
+    // why instead of filling in a form that will be refused.
+    try {
+      const r=await fetch(`/api/nominations/can-stand/${user.id}?election_id=${selectedNomEl.id}`);
+      const d=await r.json();
+      if (r.ok && d.already_nominated) {
+        const n=d.already_nominated;
+        const state = n.status==='approved' ? 'has been approved — you are on the ballot'
+                    : n.status==='pending'  ? 'is with the Election Committee for review'
+                    : 'is waiting for your four endorsers to confirm';
+        blocked.innerHTML=`✅ <strong>You are already standing for ${esc(n.position)} in this election.</strong><br>`
+          + `Your nomination ${state}. Reg 20(1) allows one post per nominee per election, so you cannot submit another.`
+          + `<br><span style="opacity:.85">Its progress is shown below. To stand for a different post you would have to withdraw this one first.</span>`;
+        blocked.style.display='block';
+        return;
+      }
+      if (r.ok && !d.can_stand) {
+        blocked.innerHTML=`🔒 <strong>You are not eligible to stand in this election.</strong><br>`
+          + `You may still vote and endorse other nominees — this only affects standing for a post.`
+          + `<ul style="margin:8px 0 0 18px;line-height:1.7">${d.reasons.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`
+          + `<span style="opacity:.85;display:block;margin-top:8px">If you believe this is wrong, contact the Department of Student Affairs.</span>`;
+        blocked.style.display='block';
+        return;
+      }
+    } catch { /* fall through and let the server decide on submit */ }
+
+    form.style.display='block';
+    loadPositions();
+  }
+
+  /* Reg 2(1)(g), 2(1)(n) and 14(2)(f) reserve three of the ten posts
+     for particular students. The server decides which ones — asking it
+     keeps this form and the submit check on the same rulebook — and a
+     post the student cannot hold is shown greyed out with the
+     regulation, rather than being offered and refused on submit. */
+  let positionsLoaded=false;
+  async function loadPositions() {
+    if (positionsLoaded) return;
+    const sel=document.getElementById('nomPosition');
+    const hint=document.getElementById('nomPositionHint');
+    try {
+      const r=await fetch(`/api/nominations/positions/${user.id}`);
+      const d=await r.json();
+      if (!r.ok) throw new Error(d.error||'Could not load the list of posts');
+
+      sel.innerHTML='<option value="">— Select position —</option>'+
+        d.positions.map(p=>p.eligible
+          ? `<option value="${esc(p.position)}">${esc(p.position)}</option>`
+          : `<option value="" disabled>${esc(p.position)} — not open to you</option>`
+        ).join('');
+
+      const blocked=d.positions.filter(p=>!p.eligible);
+      if (blocked.length) {
+        hint.className='resolved';
+        hint.innerHTML=blocked.map(p=>`🔒 ${esc(p.reason)}`).join('<br>');
+      } else {
+        hint.className='resolved'; hint.textContent='';
+      }
+      positionsLoaded=true;
+    } catch (err) {
+      // Never leave the student with an empty dropdown — the server
+      // still enforces every rule on submit.
+      hint.className='resolved bad';
+      hint.textContent='Could not check which posts you may stand for. '+err.message;
     }
   }
 
+  const ROLE_INPUTS = {
+    proposer:'endProposer', seconder:'endSeconder',
+    supporter_1:'endSupporter_1', supporter_2:'endSupporter_2',
+  };
+  const ROLE_OUTPUTS = {
+    proposer:'resProposer', seconder:'resSeconder',
+    supporter_1:'resSupporter_1', supporter_2:'resSupporter_2',
+  };
+
+  /* Show the nominee who they have actually named, before they
+     submit. The binding Reg 20 checks run on the server; this is
+     the friendly half of it.                                    */
+  async function resolveEndorser(role) {
+    const code=document.getElementById(ROLE_INPUTS[role]).value.trim();
+    const out =document.getElementById(ROLE_OUTPUTS[role]);
+    if (!code) { out.className='resolved'; out.textContent=''; return; }
+    if (!selectedNomEl) { out.className='resolved'; out.textContent='Choose an election first.'; return; }
+    try {
+      // Checked against THIS election, so a cross-campus endorser is
+      // refused here rather than after the whole form is filled in.
+      const qs=new URLSearchParams({
+        election_id: selectedNomEl.id,
+        student_id: code,
+        position: document.getElementById('nomPosition').value || '',
+        nominee_id: user.id,
+      });
+      const r=await fetch(`/api/nominations/endorser-check?${qs}`);
+      const d=await r.json();
+      if (!r.ok) { out.className='resolved bad'; out.textContent=d.error||'Could not check that ID.'; return; }
+      if (!d.ok) { out.className='resolved bad'; out.textContent=d.reason; return; }
+      out.className='resolved ok';
+      out.textContent=`${d.full_name} · ${d.campus} Campus`;
+    } catch { out.className='resolved'; out.textContent=''; }
+  }
+
   async function submitNomination() {
-    if (!selectedNomEl) { toast('Select an election first.','error'); return; }
-    const position=document.getElementById('nomPosition').value;
+    if (!selectedNomEl) { toast('Choose an election first.','error'); return; }
+
+    const position =document.getElementById('nomPosition').value;
     const manifesto=document.getElementById('nomManifesto').value.trim();
-    const proposer_name=document.getElementById('nomProposerName').value.trim();
-    const proposer_id=document.getElementById('nomProposerId').value.trim();
-    const seconder_name=document.getElementById('nomSeconderName').value.trim();
-    const seconder_id=document.getElementById('nomSeconderId').value.trim();
-    if (!position) { toast('Please select a position.','error'); return; }
-    if (!proposer_name||!proposer_id||!seconder_name||!seconder_id)
-      { toast('Proposer and seconder details are required (Reg 20).','error'); return; }
+    if (!position) { toast('Choose the post you are running for.','error'); return; }
+
+    const endorsers={};
+    for (const [role,id] of Object.entries(ROLE_INPUTS)) {
+      endorsers[role]=document.getElementById(id).value.trim();
+      if (!endorsers[role]) {
+        toast('Reg 20(1) needs all four: one proposer, one seconder and two supporters.','error');
+        return;
+      }
+    }
 
     const btn=document.getElementById('nomBtn');
     btn.disabled=true;
@@ -448,18 +917,25 @@
         method:'POST', headers:{'Content-Type':'application/json'},
         body:JSON.stringify({
           election_id:selectedNomEl.id, student_user_id:user.id,
-          position, manifesto, proposer_name, proposer_id, seconder_name, seconder_id
+          position, manifesto, ...endorsers,
         }),
       });
       const d=await r.json();
-      if (!r.ok) { toast(d.error,'error'); return; }
-      toast('✅ Nomination submitted! Awaiting Election Committee review.','success');
-      // Reset form
-      ['nomPosition','nomManifesto','nomProposerName','nomProposerId','nomSeconderName','nomSeconderId'].forEach(id=>{
+      if (!r.ok) { toast(d.error + (d.reasons?` — ${d.reasons.join('; ')}`:''),'error'); return; }
+
+      toast(d.message,'success');
+      ['nomPosition','nomManifesto',...Object.values(ROLE_INPUTS)].forEach(id=>{
         const el=document.getElementById(id);
-        el.tagName==='SELECT'?el.selectedIndex=0:el.value='';
+        if (el.tagName==='SELECT') el.selectedIndex=0; else el.value='';
+      });
+      Object.values(ROLE_OUTPUTS).forEach(id=>{
+        const el=document.getElementById(id); el.className='resolved'; el.textContent='';
       });
       await loadMyNominations();
+      // One post per nominee per election (Reg 20(1)), so the form has
+      // done its job — re-running the check closes it and replaces it
+      // with the reason.
+      await onNomElChange();
     } catch { toast('Network error.','error'); }
     finally {
       btn.disabled=false;
@@ -468,8 +944,41 @@
     }
   }
 
+  /* The nominee watches the four endorsements land, and can swap
+     out anyone who declines while nominations are still open.   */
+  /* Endorsements this student has given to other people. Runs
+     alongside their own nominations — a student can easily be both a
+     nominee for one post and a proposer for another. */
+  async function loadEndorsementsGiven() {
+    if (!user) return;
+    try {
+      const r=await fetch(`/api/endorsements/given/${user.id}`); const d=await r.json();
+      const given=(d.endorsements||[]).filter(e=>e.status!=='revoked');
+      const card=document.getElementById('givenCard');
+      const list=document.getElementById('givenList');
+      if (!given.length) { card.style.display='none'; return; }
+      card.style.display='block';
+      const TAG={confirmed:['tag-green','✅ You confirmed'],invited:['tag-gold','⏳ Awaiting your confirmation'],declined:['tag-red','❌ You declined']};
+      list.innerHTML=given.map(e=>{
+        const [cls,label]=TAG[e.status]||['tag-grey',e.status];
+        return `
+        <div class="my-nom-item" style="display:block">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
+            <div class="my-nom-info">
+              <div class="pos">You are the ${esc(e.label)} for ${esc(e.nominee_name)}</div>
+              <div class="meta">Standing for ${esc(e.position)} · ${esc(e.election_title)} · ${esc(e.campus)} Campus</div>
+              <div class="meta">Their nomination: ${esc(e.nomination_status.replace(/_/g,' '))}</div>
+            </div>
+            <span class="tag ${cls}">${label}</span>
+          </div>
+        </div>`;
+      }).join('');
+    } catch {}
+  }
+
   async function loadMyNominations() {
     if (!user) return;
+    loadEndorsementsGiven();
     try {
       const r=await fetch(`/api/nominations/student/${user.id}`); const d=await r.json();
       const noms=d.nominations||[];
@@ -477,18 +986,86 @@
       const list=document.getElementById('myNomsList');
       if (!noms.length) { card.style.display='none'; return; }
       card.style.display='block';
-      list.innerHTML=noms.map(n=>`
-        <div class="my-nom-item">
-          <div class="my-nom-info">
-            <div class="pos">${n.position} — ${n.election_title}</div>
-            <div class="meta">Submitted: ${new Date(n.created_at).toLocaleString('en-MY')}</div>
-            ${n.rejection_reason?`<div class="meta" style="color:var(--red)">Reason: ${n.rejection_reason}</div>`:''}
+
+      // All four roles are always listed, in Reg 20(1) order, so a role
+      // that was never filled shows as missing instead of just being
+      // absent from the row.
+      const ROLE_LABELS={proposer:'Proposer',seconder:'Seconder',supporter_1:'Supporter 1',supporter_2:'Supporter 2'};
+      list.innerHTML=noms.map(n=>{
+        const byRole={};
+        (n.endorsements||[]).forEach(e=>{ byRole[e.endorser_role]=e; });
+        const pips=Object.keys(ROLE_LABELS).map(role=>{
+          const e=byRole[role];
+          if (!e) return `
+            <div class="pip declined">
+              <span class="dot2"></span>
+              <span>${ROLE_LABELS[role]}: not named yet</span>
+            </div>`;
+          return `
+          <div class="pip ${e.status==='confirmed'?'confirmed':e.status==='declined'?'declined':''}">
+            <span class="dot2"></span>
+            <span>${esc(e.label)}: ${esc(e.full_name)}${
+              e.status==='declined'?' — declined':e.status==='confirmed'?' — confirmed':' — waiting'}</span>
+            ${e.status==='declined'&&n.status==='awaiting_endorsement'
+              ? `<button class="btn-sm" style="padding:2px 8px;font-size:.7rem;margin-left:4px"
+                   onclick="replaceEndorser(${n.id},'${e.endorser_role}')">Replace</button>`:''}
+          </div>`;
+        }).join('');
+
+        const tag =
+          n.status==='awaiting_endorsement' ? `<span class="tag tag-gold">${n.confirmed_count}/4 endorsed</span>` :
+          n.status==='pending'   ? '<span class="tag tag-gold">With the Election Committee</span>' :
+          n.status==='approved'  ? '<span class="tag tag-green">✅ Approved</span>' :
+          n.status==='withdrawn' ? '<span class="tag tag-grey">Withdrawn</span>' :
+                                   '<span class="tag tag-red">❌ Rejected</span>';
+
+        const canAct = n.status==='awaiting_endorsement'||n.status==='pending';
+
+        return `
+        <div class="my-nom-item" style="display:block">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
+            <div class="my-nom-info">
+              <div class="pos">You are standing for ${esc(n.position)}</div>
+              <div class="meta">${esc(n.election_title)} · ${esc(n.election_campus)} Campus</div>
+              <div class="meta">Submitted: ${new Date(n.created_at).toLocaleString('en-MY')}</div>
+              ${n.rejection_reason?`<div class="meta" style="color:var(--red)">Reason: ${esc(n.rejection_reason)}</div>`:''}
+            </div>
+            ${tag}
           </div>
-          <span class="tag ${n.status==='pending'?'tag-gold':n.status==='approved'?'tag-green':'tag-red'}">
-            ${n.status==='pending'?'⏳ Pending':n.status==='approved'?'✅ Approved':'❌ Rejected'}
-          </span>
-        </div>`).join('');
+          ${pips?`<div class="meta" style="margin-top:14px;margin-bottom:6px">The four people endorsing you (Reg 20(1)) — you are the nominee, not one of them:</div>
+                  <div class="progress">${pips}</div>`:''}
+          ${n.status==='awaiting_endorsement'
+            ? `<div class="meta" style="margin-top:12px">Your nomination reaches the Election Committee once all four confirm. Remind them to check their Endorsements page.</div>`:''}
+          ${canAct&&n.can_withdraw
+            ? `<button class="btn-sm" style="margin-top:12px" onclick="withdrawNomination(${n.id})">Withdraw nomination</button>`:''}
+          ${canAct&&!n.can_withdraw
+            ? `<div class="meta" style="margin-top:12px;color:var(--gold)">Reg 21: withdrawal is closed within three days of polling day.</div>`:''}
+        </div>`;
+      }).join('');
     } catch {}
+  }
+
+  async function replaceEndorser(nominationId, role) {
+    const code=prompt('Student ID of the replacement:');
+    if (!code) return;
+    const r=await fetch(`/api/nominations/${nominationId}/endorsers/${role}`,{
+      method:'PUT', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ student_id:code.trim(), requested_by:user.id }),
+    });
+    const d=await r.json();
+    if (!r.ok) { toast(d.error,'error'); return; }
+    toast(d.message); await loadMyNominations();
+  }
+
+  async function withdrawNomination(id) {
+    if (!confirm('Withdraw this nomination? Your endorsers will be released to endorse someone else.')) return;
+    const r=await fetch(`/api/nominations/${id}/withdraw`,{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ requested_by:user.id }),
+    });
+    const d=await r.json();
+    if (!r.ok) { toast(d.error,'error'); return; }
+    toast(d.message); await loadMyNominations();
   }
 
   function toast(msg, type='success') {
@@ -500,5 +1077,6 @@
 
   init();
 </script>
+<script src="chat-widget.js"></script>
 </body>
 </html>

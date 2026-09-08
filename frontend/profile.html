@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>UTAR SRC — My Profile</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{--navy:#0b1628;--navy2:#112240;--teal:#00c2a8;--teal2:#00e5cc;--gold:#f5c842;--white:#f0f4ff;--muted:#8896b3;--red:#f87171;--green:#34d399;--border:rgba(0,194,168,.18);--card:rgba(17,34,64,.9)}
+    html,body{min-height:100%;background:var(--navy);font-family:'DM Sans',sans-serif;color:var(--white)}
+    body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,194,168,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(0,194,168,.05) 1px,transparent 1px);background-size:48px 48px;pointer-events:none;z-index:0}
+
+    nav{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:15px 40px;background:rgba(11,22,40,.9);border-bottom:1px solid var(--border);backdrop-filter:blur(12px)}
+    .nav-brand{font-family:'Syne',sans-serif;font-weight:700;font-size:1rem;display:flex;align-items:center;gap:10px}
+    .nav-brand::before{content:'';width:28px;height:28px;border-radius:7px;background:linear-gradient(135deg,var(--teal),var(--gold));display:block}
+    .nav-right{display:flex;align-items:center;gap:10px}
+    .btn-sm{padding:7px 14px;border-radius:8px;font-size:.82rem;font-family:'Syne',sans-serif;font-weight:600;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--white);transition:all .2s;text-decoration:none;display:inline-block}
+    .btn-sm:hover{border-color:var(--teal);color:var(--teal)}
+    .btn-sm:focus-visible{outline:2px solid var(--teal2);outline-offset:2px}
+
+    .main{position:relative;z-index:1;max-width:880px;margin:0 auto;padding:40px 24px 80px}
+    h1{font-family:'Syne',sans-serif;font-size:1.9rem;font-weight:800;margin-bottom:6px}
+    .sub{color:var(--muted);font-size:.92rem;margin-bottom:30px;max-width:62ch}
+
+    .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:26px;margin-bottom:22px}
+    .card-title{font-family:'Syne',sans-serif;font-weight:700;font-size:1.05rem;margin-bottom:5px}
+    .card-sub{color:var(--muted);font-size:.85rem;margin-bottom:20px;max-width:62ch;line-height:1.55}
+
+    .form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .field{margin-bottom:15px;display:flex;flex-direction:column}
+    label{font-size:.8rem;font-weight:500;color:var(--muted);margin-bottom:6px}
+    input,select,textarea{width:100%;padding:11px 13px;border-radius:9px;border:1px solid var(--border);background:rgba(11,22,40,.7);color:var(--white);font-family:'DM Sans',sans-serif;font-size:.92rem}
+    input:focus,select:focus{outline:none;border-color:var(--teal)}
+    /* The OS draws the open dropdown list and ignores the colours set on
+       the <select>, so each <option> needs its own. */
+    select option{background:#112240;color:#f0f4ff}
+    input:disabled{opacity:.5;cursor:not-allowed}
+    .hint{font-size:.75rem;color:var(--muted);margin-top:5px;line-height:1.5}
+    .hint.lock{color:var(--gold)}
+
+    .btn{padding:11px 22px;border-radius:9px;font-family:'Syne',sans-serif;font-weight:600;font-size:.9rem;cursor:pointer;border:none;transition:all .2s}
+    .btn:focus-visible{outline:2px solid var(--teal2);outline-offset:2px}
+    .btn-primary{background:linear-gradient(135deg,var(--teal),var(--teal2));color:#04241f}
+    .btn-primary:hover{filter:brightness(1.08)}
+    .btn-primary:disabled{opacity:.5;cursor:not-allowed;filter:none}
+    .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--white)}
+    .btn-ghost:hover{border-color:var(--teal);color:var(--teal)}
+
+    .notice{padding:13px 16px;border-radius:10px;font-size:.85rem;line-height:1.6;margin-bottom:18px}
+    .notice-info{background:rgba(0,194,168,.08);border:1px solid rgba(0,194,168,.22)}
+    .notice-warn{background:rgba(245,200,66,.08);border:1px solid rgba(245,200,66,.25);color:#f5d98a}
+    .notice-err{background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.25);color:#fca5a5}
+
+    .wallet-box{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:16px;border:1px solid var(--border);border-radius:11px;background:rgba(11,22,40,.5)}
+    .wallet-addr{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.85rem;color:var(--teal);word-break:break-all}
+    .tag{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:999px;font-size:.72rem;font-weight:600}
+    .tag-green{background:rgba(52,211,153,.12);color:var(--green)}
+    .tag-gold{background:rgba(245,200,66,.12);color:var(--gold)}
+    .tag-red{background:rgba(248,113,113,.12);color:var(--red)}
+    .tag-grey{background:rgba(136,150,179,.12);color:var(--muted)}
+
+    .req{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid rgba(0,194,168,.1)}
+    .req:last-child{border-bottom:none}
+    .req-field{font-weight:600;font-size:.9rem}
+    .req-vals{font-size:.8rem;color:var(--muted);margin-top:3px}
+
+    .toast{position:fixed;bottom:26px;right:26px;padding:14px 20px;border-radius:11px;font-size:.88rem;font-weight:500;background:var(--navy2);border:1px solid var(--teal);opacity:0;transform:translateY(12px);transition:all .28s;z-index:300;max-width:380px}
+    .toast.show{opacity:1;transform:translateY(0)}
+    .toast.error{border-color:var(--red)}
+
+    @media(max-width:640px){.form-row{grid-template-columns:1fr}nav{padding:14px 18px}.main{padding:28px 16px 60px}}
+    @media(prefers-reduced-motion:reduce){*{transition:none!important}}
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-brand">UTAR SRC Voting</div>
+  <div class="nav-right">
+    <a class="btn-sm" href="vote.html">Elections</a>
+    <a class="btn-sm" href="endorse.html">Endorsements <span id="endBadge"></span></a>
+    <button class="btn-sm" onclick="logout()">Sign out</button>
+  </div>
+</nav>
+
+<main class="main">
+  <h1>My profile</h1>
+  <p class="sub">Keep your details accurate. Contact details save immediately; changes to your name, faculty or campus after your account is verified go to the Election Committee first, so their check stays meaningful.</p>
+
+  <div id="statusNotice"></div>
+
+  <!-- ── Personal details ─────────────────────────────────── -->
+  <section class="card">
+    <h2 class="card-title">Personal details</h2>
+    <p class="card-sub">Your faculty and campus come from the Department of Student Affairs roster. They decide which SRC election you belong to, so correct them here if the roster is out of date.</p>
+
+    <div class="form-row">
+      <div class="field">
+        <label for="fStudentId">Student ID</label>
+        <input type="text" id="fStudentId"/>
+        <span class="hint" id="hStudentId"></span>
+      </div>
+      <div class="field">
+        <label for="fFullName">Full name</label>
+        <input type="text" id="fFullName"/>
+        <span class="hint" id="hFullName"></span>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="field">
+        <label for="fEmail">Email</label>
+        <input type="email" id="fEmail"/>
+        <span class="hint" id="hEmail"></span>
+      </div>
+      <div class="field">
+        <label for="fPhone">Phone</label>
+        <input type="text" id="fPhone" placeholder="e.g. 012-3456789"/>
+        <span class="hint">Saves immediately.</span>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="field">
+        <label for="fFaculty">Faculty / Institute</label>
+        <input type="text" id="fFaculty"/>
+        <span class="hint" id="hFaculty"></span>
+      </div>
+      <div class="field">
+        <label for="fCampus">Campus</label>
+        <select id="fCampus">
+          <option>Kampar</option>
+          <option>Sungai Long</option>
+        </select>
+        <span class="hint" id="hCampus"></span>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="fReason">Why are you making this change? <span style="font-weight:400">(sent to the Election Committee)</span></label>
+      <input type="text" id="fReason" placeholder="e.g. I transferred to Sungai Long in May"/>
+    </div>
+
+    <button class="btn btn-primary" id="saveBtn" onclick="saveProfile()">Save changes</button>
+  </section>
+
+  <!-- ── Wallet ───────────────────────────────────────────── -->
+  <section class="card">
+    <h2 class="card-title">MetaMask wallet</h2>
+    <p class="card-sub">Your ballot is cast from this wallet, so it must be one you control. Verifying signs a short message — it costs no gas and moves nothing.</p>
+    <div id="walletState"></div>
+  </section>
+
+  <!-- ── Change requests ──────────────────────────────────── -->
+  <section class="card" id="reqCard" style="display:none">
+    <h2 class="card-title">Changes with the Election Committee</h2>
+    <p class="card-sub">Your account keeps working normally while these are reviewed.</p>
+    <div id="reqList"></div>
+  </section>
+
+  <!-- ── Password ─────────────────────────────────────────── -->
+  <section class="card">
+    <h2 class="card-title">Password</h2>
+    <p class="card-sub">Use at least 8 characters.</p>
+    <div class="form-row">
+      <div class="field"><label for="pwCurrent">Current password</label><input type="password" id="pwCurrent"/></div>
+      <div class="field"><label for="pwNew">New password</label><input type="password" id="pwNew"/></div>
+    </div>
+    <button class="btn btn-ghost" onclick="changePassword()">Change password</button>
+  </section>
+</main>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+<script>
+  let user = null, profile = null, editable = {}, needsReview = {}, locks = {};
+
+  async function init() {
+    user = JSON.parse(sessionStorage.getItem('user') || 'null');
+    if (!user) { window.location.href = 'login.html'; return; }
+    await loadProfile();
+    loadEndorsementBadge();
+  }
+
+  async function loadProfile() {
+    const r = await fetch(`/api/profile/${user.id}`);
+    const d = await r.json();
+    if (!r.ok) { toast(d.error, 'error'); return; }
+
+    profile = d.user; editable = d.editable; needsReview = d.needs_review; locks = d.locks;
+
+    document.getElementById('fStudentId').value = profile.student_id || '';
+    document.getElementById('fFullName').value  = profile.full_name  || '';
+    document.getElementById('fEmail').value     = profile.email      || '';
+    document.getElementById('fPhone').value     = profile.phone      || '';
+    document.getElementById('fFaculty').value   = profile.faculty    || '';
+    document.getElementById('fCampus').value    = profile.campus     || 'Kampar';
+
+    applyFieldPolicy();
+    renderStatus(d);
+    renderWallet();
+    renderRequests(d.change_requests || []);
+  }
+
+  // The server decides what may change; the page only reflects it.
+  function applyFieldPolicy() {
+    const map = {
+      student_id: 'fStudentId', full_name: 'fFullName',
+      email: 'fEmail', faculty: 'fFaculty', campus: 'fCampus',
+    };
+    for (const [field, id] of Object.entries(map)) {
+      const input = document.getElementById(id);
+      const hint  = document.getElementById('h' + id.slice(1));
+      input.disabled = !editable[field];
+      if (!editable[field]) {
+        hint.className = 'hint lock';
+        hint.textContent = field === 'student_id'
+          ? 'Locked once your account is verified. Email dsa@utar.edu.my if it is wrong.'
+          : 'Locked while your nomination is under review — this name is already on the blockchain candidate record.';
+      } else if (needsReview[field]) {
+        hint.className = 'hint';
+        hint.textContent = 'Goes to the Election Committee for review.';
+      } else {
+        hint.className = 'hint';
+        hint.textContent = 'Saves immediately.';
+      }
+    }
+  }
+
+  function renderStatus(d) {
+    const box = document.getElementById('statusNotice');
+    if (!profile.is_approved) {
+      box.innerHTML = `<div class="notice notice-warn">
+        Your account is waiting for verification${profile.approval_note ? ` — ${esc(profile.approval_note)}` : ''}.
+        You can correct any detail below while you wait; nothing is locked yet.
+      </div>`;
+    } else {
+      box.innerHTML = `<div class="notice notice-info">
+        Your account is verified for <strong>${esc(profile.campus)} Campus</strong>${profile.roster_matched ? ' against the Department of Student Affairs roster' : ''}.
+      </div>`;
+    }
+  }
+
+  function renderWallet() {
+    const box = document.getElementById('walletState');
+    const linked = profile.wallet_address && profile.wallet_verified_at;
+
+    if (linked && !editable.wallet_address) {
+      box.innerHTML = `
+        <div class="wallet-box">
+          <span class="tag tag-green">Verified</span>
+          <span class="wallet-addr">${esc(profile.wallet_address)}</span>
+        </div>
+        <div class="notice notice-warn" style="margin-top:14px">
+          This wallet is registered on the blockchain for <strong>${esc(locks.wallet_election)}</strong>.
+          It cannot be swapped while that election is live, or the old address would keep its right to vote.
+          Contact the Election Committee if you have lost access to it.
+        </div>`;
+      return;
+    }
+
+    if (linked) {
+      box.innerHTML = `
+        <div class="wallet-box">
+          <span class="tag tag-green">Verified</span>
+          <span class="wallet-addr">${esc(profile.wallet_address)}</span>
+          <button class="btn btn-ghost" style="margin-left:auto" onclick="linkWallet()">Link a different wallet</button>
+        </div>`;
+      return;
+    }
+
+    box.innerHTML = `
+      <div class="notice notice-warn">No wallet linked yet. You will not be able to cast a ballot until you link one.</div>
+      <button class="btn btn-primary" id="walletBtn" onclick="linkWallet()">Connect and verify wallet</button>`;
+  }
+
+  function renderRequests(list) {
+    const card = document.getElementById('reqCard');
+    const box  = document.getElementById('reqList');
+    const open = list.filter(r => r.status === 'pending');
+    const recent = list.slice(0, 8);
+    if (!recent.length) { card.style.display = 'none'; return; }
+    card.style.display = 'block';
+    box.innerHTML = recent.map(r => `
+      <div class="req">
+        <div>
+          <div class="req-field">${esc(labelFor(r.field_name))}</div>
+          <div class="req-vals">${esc(r.old_value || '—')} &rarr; ${esc(r.new_value)}</div>
+          ${r.review_note ? `<div class="req-vals">Note: ${esc(r.review_note)}</div>` : ''}
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span class="tag ${r.status === 'pending' ? 'tag-gold' : r.status === 'approved' ? 'tag-green' : 'tag-red'}">${esc(r.status)}</span>
+          ${r.status === 'pending' ? `<button class="btn-sm" onclick="withdrawRequest(${r.id})">Withdraw</button>` : ''}
+        </div>
+      </div>`).join('');
+    if (open.length) card.querySelector('.card-sub').textContent =
+      `${open.length} change${open.length > 1 ? 's are' : ' is'} waiting for review. Your account keeps working normally in the meantime.`;
+  }
+
+  function labelFor(f) {
+    return { full_name:'Full name', email:'Email', faculty:'Faculty', campus:'Campus', student_id:'Student ID', phone:'Phone' }[f] || f;
+  }
+
+  // ── Save ───────────────────────────────────────────────────
+  async function saveProfile() {
+    const body = { reason: document.getElementById('fReason').value.trim() || null };
+    const map = { student_id:'fStudentId', full_name:'fFullName', email:'fEmail', phone:'fPhone', faculty:'fFaculty', campus:'fCampus' };
+    for (const [field, id] of Object.entries(map)) {
+      const el = document.getElementById(id);
+      if (!el.disabled) body[field] = el.value.trim();
+    }
+
+    const btn = document.getElementById('saveBtn');
+    btn.disabled = true;
+    try {
+      const r = await fetch(`/api/profile/${user.id}`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+      });
+      const d = await r.json();
+      if (!r.ok) { toast(d.error, 'error'); return; }
+
+      if (d.refused?.length) toast(d.refused[0].reason, 'error');
+      else toast(d.message);
+
+      // Keep the session copy in step with what was actually applied.
+      (d.applied || []).forEach(a => { user[a.field] = a.to; });
+      sessionStorage.setItem('user', JSON.stringify(user));
+      document.getElementById('fReason').value = '';
+      await loadProfile();
+    } catch {
+      toast('Could not reach the server.', 'error');
+    } finally { btn.disabled = false; }
+  }
+
+  // ── Wallet linking, with proof of ownership ────────────────
+  async function linkWallet() {
+    if (!window.ethereum) {
+      toast('MetaMask was not detected. Install the extension, then try again.', 'error');
+      return;
+    }
+    try {
+      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      const address = accounts[0];
+
+      const nr = await fetch('/api/wallet/nonce', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ student_id: profile.student_id, wallet_address: address }),
+      });
+      const nd = await nr.json();
+      if (!nr.ok) { toast(nd.error, 'error'); return; }
+
+      toast('Approve the signature request in MetaMask.');
+      const signature = await window.ethereum.request({
+        method: 'personal_sign', params: [nd.message, address],
+      });
+
+      const lr = await fetch('/api/wallet/link', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ student_id: profile.student_id, wallet_address: address, nonce: nd.nonce, signature }),
+      });
+      const ld = await lr.json();
+      if (!lr.ok) { toast(ld.error, 'error'); return; }
+
+      user.wallet_address = ld.wallet_address;
+      sessionStorage.setItem('user', JSON.stringify(user));
+      toast('Wallet verified and linked.');
+      await loadProfile();
+    } catch (err) {
+      toast(err.code === 4001 ? 'You cancelled the signature request.' : (err.message || 'Wallet verification failed.'), 'error');
+    }
+  }
+
+  async function withdrawRequest(id) {
+    const r = await fetch(`/api/profile/${user.id}/change-requests/${id}`, { method: 'DELETE' });
+    const d = await r.json();
+    if (!r.ok) { toast(d.error, 'error'); return; }
+    toast(d.message);
+    await loadProfile();
+  }
+
+  async function changePassword() {
+    const current_password = document.getElementById('pwCurrent').value;
+    const new_password = document.getElementById('pwNew').value;
+    if (!current_password || !new_password) { toast('Fill in both password fields.', 'error'); return; }
+    const r = await fetch('/api/auth/change-password', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ student_id: profile.student_id, current_password, new_password }),
+    });
+    const d = await r.json();
+    if (!r.ok) { toast(d.error, 'error'); return; }
+    document.getElementById('pwCurrent').value = '';
+    document.getElementById('pwNew').value = '';
+    toast('Password changed.');
+  }
+
+  async function loadEndorsementBadge() {
+    try {
+      const r = await fetch(`/api/endorsements/pending/${user.id}`);
+      const d = await r.json();
+      if (d.pending_count > 0)
+        document.getElementById('endBadge').textContent = `(${d.pending_count})`;
+    } catch {}
+  }
+
+  function esc(s) {
+    return String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+  }
+  function toast(msg, type = 'success') {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = `toast ${type} show`;
+    setTimeout(() => { el.className = `toast ${type}`; }, 4200);
+  }
+  function logout() { sessionStorage.clear(); window.location.href = 'login.html'; }
+
+  init();
+</script>
+<script src="chat-widget.js"></script>
+</body>
+</html>

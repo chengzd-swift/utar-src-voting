@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>UTAR SRC — Endorsement Requests</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{--navy:#0b1628;--navy2:#112240;--teal:#00c2a8;--teal2:#00e5cc;--gold:#f5c842;--white:#f0f4ff;--muted:#8896b3;--red:#f87171;--green:#34d399;--border:rgba(0,194,168,.18);--card:rgba(17,34,64,.9)}
+    html,body{min-height:100%;background:var(--navy);font-family:'DM Sans',sans-serif;color:var(--white)}
+    body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,194,168,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(0,194,168,.05) 1px,transparent 1px);background-size:48px 48px;pointer-events:none;z-index:0}
+
+    nav{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:15px 40px;background:rgba(11,22,40,.9);border-bottom:1px solid var(--border);backdrop-filter:blur(12px)}
+    .nav-brand{font-family:'Syne',sans-serif;font-weight:700;font-size:1rem;display:flex;align-items:center;gap:10px}
+    .nav-brand::before{content:'';width:28px;height:28px;border-radius:7px;background:linear-gradient(135deg,var(--teal),var(--gold));display:block}
+    .nav-right{display:flex;gap:10px}
+    .btn-sm{padding:7px 14px;border-radius:8px;font-size:.82rem;font-family:'Syne',sans-serif;font-weight:600;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--white);transition:all .2s;text-decoration:none;display:inline-block}
+    .btn-sm:hover{border-color:var(--teal);color:var(--teal)}
+    .btn-sm:focus-visible{outline:2px solid var(--teal2);outline-offset:2px}
+
+    .main{position:relative;z-index:1;max-width:820px;margin:0 auto;padding:40px 24px 80px}
+    h1{font-family:'Syne',sans-serif;font-size:1.9rem;font-weight:800;margin-bottom:6px}
+    .sub{color:var(--muted);font-size:.92rem;margin-bottom:26px;max-width:64ch;line-height:1.6}
+
+    .notice{padding:14px 17px;border-radius:10px;font-size:.86rem;line-height:1.6;margin-bottom:22px}
+    .notice-info{background:rgba(0,194,168,.08);border:1px solid rgba(0,194,168,.22)}
+    .notice-warn{background:rgba(245,200,66,.08);border:1px solid rgba(245,200,66,.25);color:#f5d98a}
+
+    .req-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px;margin-bottom:18px}
+    .req-card.answered{opacity:.62}
+    .req-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:14px;flex-wrap:wrap}
+    .req-role{font-family:'Syne',sans-serif;font-size:.78rem;font-weight:700;color:var(--gold)}
+    .req-name{font-family:'Syne',sans-serif;font-size:1.22rem;font-weight:700;margin-top:2px}
+    .req-meta{color:var(--muted);font-size:.85rem;margin-top:5px;line-height:1.6}
+    .req-manifesto{border-left:2px solid var(--teal);padding:10px 0 10px 14px;margin:16px 0;color:var(--muted);font-size:.88rem;line-height:1.65;max-width:66ch}
+
+    .tag{display:inline-flex;align-items:center;padding:4px 11px;border-radius:999px;font-size:.72rem;font-weight:600;white-space:nowrap}
+    .tag-gold{background:rgba(245,200,66,.12);color:var(--gold)}
+    .tag-green{background:rgba(52,211,153,.12);color:var(--green)}
+    .tag-red{background:rgba(248,113,113,.12);color:var(--red)}
+
+    .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;padding-top:18px;border-top:1px solid rgba(0,194,168,.12)}
+    .btn{padding:11px 22px;border-radius:9px;font-family:'Syne',sans-serif;font-weight:600;font-size:.88rem;cursor:pointer;border:none;transition:all .2s}
+    .btn:focus-visible{outline:2px solid var(--teal2);outline-offset:2px}
+    .btn-confirm{background:linear-gradient(135deg,var(--teal),var(--teal2));color:#04241f}
+    .btn-confirm:hover{filter:brightness(1.08)}
+    .btn-confirm:disabled{opacity:.5;cursor:not-allowed}
+    .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--white)}
+    .btn-ghost:hover{border-color:var(--teal);color:var(--teal)}
+    .btn-decline{background:transparent;border:1px solid rgba(248,113,113,.3);color:var(--red)}
+    .btn-decline:hover{background:rgba(248,113,113,.08)}
+
+    .empty{text-align:center;padding:64px 20px;color:var(--muted)}
+    .empty h2{font-family:'Syne',sans-serif;color:var(--white);font-size:1.1rem;margin-bottom:8px;font-weight:700}
+
+    .modal-overlay{position:fixed;inset:0;background:rgba(4,10,20,.78);display:none;align-items:center;justify-content:center;z-index:200;padding:20px}
+    .modal-overlay.open{display:flex}
+    .modal{background:var(--navy2);border:1px solid var(--border);border-radius:15px;padding:28px;max-width:520px;width:100%;max-height:88vh;overflow-y:auto}
+    .modal-title{font-family:'Syne',sans-serif;font-weight:700;font-size:1.1rem;margin-bottom:6px}
+    .modal-sub{color:var(--muted);font-size:.85rem;margin-bottom:18px;line-height:1.6}
+    .sig-preview{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.74rem;line-height:1.65;white-space:pre-wrap;background:rgba(11,22,40,.8);border:1px solid var(--border);border-radius:9px;padding:14px;max-height:230px;overflow-y:auto;color:var(--muted);margin-bottom:18px}
+    label{font-size:.8rem;color:var(--muted);display:block;margin-bottom:6px}
+    input,textarea{width:100%;padding:11px 13px;border-radius:9px;border:1px solid var(--border);background:rgba(11,22,40,.7);color:var(--white);font-family:'DM Sans',sans-serif;font-size:.92rem;margin-bottom:14px}
+    input:focus,textarea:focus{outline:none;border-color:var(--teal)}
+    .modal-actions{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+
+    .toast{position:fixed;bottom:26px;right:26px;padding:14px 20px;border-radius:11px;font-size:.88rem;background:var(--navy2);border:1px solid var(--teal);opacity:0;transform:translateY(12px);transition:all .28s;z-index:300;max-width:400px}
+    .toast.show{opacity:1;transform:translateY(0)}
+    .toast.error{border-color:var(--red)}
+
+    @media(max-width:640px){nav{padding:14px 18px}.main{padding:28px 16px 60px}}
+    @media(prefers-reduced-motion:reduce){*{transition:none!important}}
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-brand">UTAR SRC Voting</div>
+  <div class="nav-right">
+    <a class="btn-sm" href="vote.html">Elections</a>
+    <a class="btn-sm" href="profile.html">My profile</a>
+    <button class="btn-sm" onclick="logout()">Sign out</button>
+  </div>
+</nav>
+
+<main class="main">
+  <h1>Endorsement requests</h1>
+  <p class="sub">A nominee has named you as their proposer, seconder or supporter. Only you can confirm it — nobody can enter an endorsement on your behalf. This replaces standing at the DSA counter with your student ID card.</p>
+
+  <div class="notice notice-info">
+    Under Regulation XIII Reg 20(3) you may propose, second or support <strong>only one nominee for any one post</strong>. Confirming here uses up that one endorsement for that post.
+  </div>
+
+  <div id="list"></div>
+</main>
+
+<!-- Confirm -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal">
+    <div class="modal-title">Confirm your endorsement</div>
+    <div class="modal-sub" id="confirmSub">—</div>
+    <div id="sigWrap">
+      <label>You are about to sign this statement with your wallet</label>
+      <div class="sig-preview" id="sigPreview">Preparing…</div>
+    </div>
+    <div id="pwWrap" style="display:none">
+      <label for="pwInput">Confirm with your account password</label>
+      <input type="password" id="pwInput" placeholder="Your password"/>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModals()">Cancel</button>
+      <button class="btn btn-ghost" id="switchBtn" onclick="switchMethod()">Use password instead</button>
+      <button class="btn btn-confirm" id="confirmBtn" onclick="submitConfirm()">Sign and confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- Decline -->
+<div class="modal-overlay" id="declineModal">
+  <div class="modal">
+    <div class="modal-title">Decline this request</div>
+    <div class="modal-sub" id="declineSub">The nominee will be told, and can ask someone else instead.</div>
+    <label for="declineReason">Reason (optional, shared with the nominee)</label>
+    <textarea id="declineReason" rows="3" placeholder="e.g. I am already supporting another candidate for this post"></textarea>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModals()">Cancel</button>
+      <button class="btn btn-decline" onclick="submitDecline()">Decline</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+  let user = null, requests = [], active = null;
+  let method = 'wallet_signature', challenge = null;
+
+  async function init() {
+    user = JSON.parse(sessionStorage.getItem('user') || 'null');
+    if (!user) { window.location.href = 'login.html'; return; }
+    await load();
+  }
+
+  async function load() {
+    const r = await fetch(`/api/endorsements/pending/${user.id}`);
+    const d = await r.json();
+    if (!r.ok) { toast(d.error, 'error'); return; }
+    requests = d.requests || [];
+    render();
+  }
+
+  function render() {
+    const box = document.getElementById('list');
+    if (!requests.length) {
+      box.innerHTML = `<div class="empty">
+        <h2>Nothing to endorse right now</h2>
+        <p>When a classmate names you as their proposer, seconder or supporter, the request will appear here.</p>
+      </div>`;
+      return;
+    }
+    box.innerHTML = requests.map(r => `
+      <article class="req-card ${r.status === 'invited' ? '' : 'answered'}">
+        <div class="req-head">
+          <div>
+            <div class="req-role">You are asked to be the ${esc(r.label)}</div>
+            <div class="req-name">${esc(r.nominee_name)}</div>
+            <div class="req-meta">
+              ${esc(r.nominee_code)} &middot; ${esc(r.nominee_faculty || '—')}<br>
+              Standing for <strong style="color:var(--white)">${esc(r.position)}</strong> in ${esc(r.election_title)} (${esc(r.campus)} Campus)
+              ${r.nomination_end ? `<br>Nominations close ${new Date(r.nomination_end).toLocaleString('en-MY')}` : ''}
+            </div>
+          </div>
+          <span class="tag ${r.status === 'invited' ? 'tag-gold' : r.status === 'confirmed' ? 'tag-green' : 'tag-red'}">
+            ${r.status === 'invited' ? 'Awaiting your answer' : r.status === 'confirmed' ? 'Confirmed' : 'Declined'}
+          </span>
+        </div>
+
+        ${r.manifesto ? `<div class="req-manifesto">${esc(r.manifesto)}</div>` : ''}
+
+        ${r.status === 'invited' ? `
+          <div class="actions">
+            <button class="btn btn-confirm" onclick="openConfirm(${r.id})">Confirm endorsement</button>
+            <button class="btn btn-decline" onclick="openDecline(${r.id})">Decline</button>
+          </div>` : `
+          <div class="req-meta" style="margin-top:14px">
+            ${r.status === 'confirmed'
+              ? `Confirmed ${new Date(r.responded_at).toLocaleString('en-MY')} using ${r.verification_method === 'wallet_signature' ? 'a wallet signature' : 'your password'}.`
+              : `Declined ${new Date(r.responded_at).toLocaleString('en-MY')}.`}
+          </div>`}
+      </article>`).join('');
+  }
+
+  // ── Confirm ────────────────────────────────────────────────
+  async function openConfirm(id) {
+    active = requests.find(r => r.id === id);
+    method = 'wallet_signature';
+    challenge = null;
+    document.getElementById('confirmSub').textContent =
+      `${active.label} for ${active.nominee_name} — ${active.position}`;
+    document.getElementById('confirmModal').classList.add('open');
+    setMethodUI();
+
+    if (!window.ethereum) { switchMethod('No MetaMask detected, so confirm with your password.'); return; }
+
+    const r = await fetch(`/api/endorsements/${id}/nonce`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: user.id }),
+    });
+    const d = await r.json();
+    if (!r.ok) { switchMethod(d.error); return; }
+    challenge = d;
+    document.getElementById('sigPreview').textContent = d.message;
+  }
+
+  function setMethodUI() {
+    const wallet = method === 'wallet_signature';
+    document.getElementById('sigWrap').style.display = wallet ? 'block' : 'none';
+    document.getElementById('pwWrap').style.display  = wallet ? 'none' : 'block';
+    document.getElementById('confirmBtn').textContent = wallet ? 'Sign and confirm' : 'Confirm';
+    document.getElementById('switchBtn').textContent  = wallet ? 'Use password instead' : 'Use my wallet instead';
+    document.getElementById('switchBtn').style.display = (wallet || challenge) ? 'inline-block' : 'none';
+  }
+
+  function switchMethod(msg) {
+    method = method === 'wallet_signature' ? 'password' : 'wallet_signature';
+    setMethodUI();
+    if (msg) toast(msg, 'error');
+  }
+
+  async function submitConfirm() {
+    const btn = document.getElementById('confirmBtn');
+    btn.disabled = true;
+    try {
+      const body = { user_id: user.id, method };
+
+      if (method === 'wallet_signature') {
+        if (!challenge) { toast('No signing challenge ready. Try again.', 'error'); return; }
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        if (accounts[0].toLowerCase() !== challenge.wallet_address.toLowerCase()) {
+          toast(`Switch MetaMask to your registered wallet ${short(challenge.wallet_address)} first.`, 'error');
+          return;
+        }
+        body.nonce = challenge.nonce;
+        body.signature = await window.ethereum.request({
+          method: 'personal_sign', params: [challenge.message, accounts[0]],
+        });
+      } else {
+        body.password = document.getElementById('pwInput').value;
+        if (!body.password) { toast('Enter your password.', 'error'); return; }
+      }
+
+      const r = await fetch(`/api/endorsements/${active.id}/confirm`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+      });
+      const d = await r.json();
+      if (!r.ok) { toast(d.error, 'error'); return; }
+
+      closeModals();
+      toast(d.message);
+      await load();
+    } catch (err) {
+      toast(err.code === 4001 ? 'You cancelled the signature request.' : (err.message || 'Could not confirm.'), 'error');
+    } finally { btn.disabled = false; }
+  }
+
+  // ── Decline ────────────────────────────────────────────────
+  function openDecline(id) {
+    active = requests.find(r => r.id === id);
+    document.getElementById('declineSub').textContent =
+      `Declining to act as ${active.label} for ${active.nominee_name}. They can then ask someone else.`;
+    document.getElementById('declineReason').value = '';
+    document.getElementById('declineModal').classList.add('open');
+  }
+
+  async function submitDecline() {
+    const r = await fetch(`/api/endorsements/${active.id}/decline`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: user.id, reason: document.getElementById('declineReason').value.trim() }),
+    });
+    const d = await r.json();
+    if (!r.ok) { toast(d.error, 'error'); return; }
+    closeModals();
+    toast(d.message);
+    await load();
+  }
+
+  function closeModals() {
+    document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('open'));
+    document.getElementById('pwInput').value = '';
+  }
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModals(); });
+
+  function short(a) { return a ? a.slice(0, 6) + '…' + a.slice(-4) : ''; }
+  function esc(s) {
+    return String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+  }
+  function toast(msg, type = 'success') {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = `toast ${type} show`;
+    setTimeout(() => { el.className = `toast ${type}`; }, 4200);
+  }
+  function logout() { sessionStorage.clear(); window.location.href = 'login.html'; }
+
+  init();
+</script>
+<script src="chat-widget.js"></script>
+</body>
+</html>

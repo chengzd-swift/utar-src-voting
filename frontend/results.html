@@ -47,6 +47,11 @@
     @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 
     .results-list{display:flex;flex-direction:column;gap:16px}
+    .post-group{margin-bottom:30px;display:flex;flex-direction:column;gap:12px}
+    .post-head{display:flex;align-items:baseline;justify-content:space-between;gap:14px;flex-wrap:wrap;
+      padding-bottom:9px;border-bottom:1px solid var(--border);margin-bottom:2px}
+    .post-head h3{font-family:'Syne',sans-serif;font-size:1.02rem;font-weight:700;margin:0;color:var(--teal)}
+    .post-head span{font-size:.76rem;color:var(--muted)}
     .result-card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:24px 28px;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:20px;animation:slideUp .4s ease both;transition:border-color .2s}
     .result-card:hover{border-color:rgba(0,194,168,.35)}
     .result-card.winner{border-color:rgba(245,200,66,.4);background:rgba(245,200,66,.04)}
@@ -138,6 +143,11 @@
   let elections = [];
   let activeElectionId = null;
 
+  function esc(s) {
+    return String(s ?? '').replace(/[&<>"']/g, c =>
+      ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+  }
+
   async function init() {
     await loadElectionTabs();
 
@@ -192,39 +202,85 @@
         }
       }
 
-      const sorted = [...candidates].sort((a,b)=>(b.vote_count||0)-(a.vote_count||0));
-      const total  = sorted.reduce((s,c)=>s+(c.vote_count||0),0);
+      /* Each post is its own contest — a Secretary with two votes has
+         not beaten a Chairperson with one. Candidates are grouped by
+         post, ranked within it, and the share is of that post's votes,
+         not of the whole election. Posts appear in Reg 2(1) order. */
+      const ORDER = ['Chairperson','Vice Chairperson','Secretary','Treasurer','Auditor 1','Auditor 2',
+                     'Faculty/Institute Representative','Campus Wide Representative',
+                     'International Representative','Postgraduate Representative'];
+      const byPost = new Map();
+      candidates.forEach(c => {
+        if (!byPost.has(c.position)) byPost.set(c.position, []);
+        byPost.get(c.position).push(c);
+      });
+      const posts = [...byPost.keys()].sort((a,b) => {
+        const ia = ORDER.indexOf(a), ib = ORDER.indexOf(b);
+        return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib) || a.localeCompare(b);
+      });
+      const closed = !es?.isOpen;
 
-      // Winner banner
+      // Winner per post, so the banner reports a council rather than
+      // one person. A tie is named as a tie, not resolved silently.
+      const decided = [];
+      posts.forEach(p => {
+        const rows = byPost.get(p).sort((a,b)=>(b.vote_count||0)-(a.vote_count||0));
+        const top = rows[0];
+        if (!closed || !top || !(top.vote_count > 0)) return;
+        const tied = rows.filter(r => (r.vote_count||0) === top.vote_count);
+        decided.push({ post: p, tied, votes: top.vote_count });
+      });
+
       const wb = document.getElementById('winnerBanner');
-      if (!es?.isOpen && sorted.length && sorted[0].vote_count > 0) {
+      if (decided.length) {
         wb.classList.add('visible');
-        document.getElementById('winnerName').textContent = sorted[0].full_name;
-        document.getElementById('winnerSub').textContent =
-          `${sorted[0].position} · ${sorted[0].faculty} · ${sorted[0].vote_count} votes`;
+        document.getElementById('winnerName').textContent =
+          decided.length === 1 && decided[0].tied.length === 1
+            ? decided[0].tied[0].full_name
+            : `${decided.length} post${decided.length===1?'':'s'} decided`;
+        document.getElementById('winnerSub').innerHTML = decided.map(d =>
+          d.tied.length > 1
+            ? `<div><strong>${esc(d.post)}</strong> — tie between ${d.tied.map(t=>esc(t.full_name)).join(' and ')} on ${d.votes} vote${d.votes===1?'':'s'}</div>`
+            : `<div><strong>${esc(d.post)}</strong> — ${esc(d.tied[0].full_name)} · ${d.votes} vote${d.votes===1?'':'s'}</div>`
+        ).join('');
       } else {
         wb.classList.remove('visible');
       }
 
       const list = document.getElementById('resultsList');
-      if (!sorted.length) {
+      if (!candidates.length) {
         list.innerHTML = '<div class="empty"><div class="empty-icon">📭</div>No candidates registered yet.</div>';
       } else {
-        list.innerHTML = sorted.map((c,i) => {
-          const pct = total > 0 ? Math.round((c.vote_count||0)/total*100) : 0;
-          const isWinner = i===0 && !es?.isOpen && (c.vote_count||0)>0;
-          return `
-            <div class="result-card ${isWinner?'winner':''}" style="animation-delay:${i*.08}s">
-              <div class="result-rank">${i+1}</div>
+        let n = 0;
+        list.innerHTML = posts.map(post => {
+          const rows = byPost.get(post).sort((a,b)=>(b.vote_count||0)-(a.vote_count||0));
+          const cast = rows.reduce((s,c)=>s+(c.vote_count||0),0);
+          const top  = rows[0]?.vote_count || 0;
+          const cards = rows.map(c => {
+            const v = c.vote_count || 0;
+            const pct = cast > 0 ? Math.round(v/cast*100) : 0;
+            const isWinner = closed && v > 0 && v === top;
+            return `
+            <div class="result-card ${isWinner?'winner':''}" style="animation-delay:${(n++)*.06}s">
+              <div class="result-rank">${rows.indexOf(c)+1}</div>
               <div>
-                <div class="result-name">${c.full_name} ${isWinner?'🏆':''}</div>
-                <div class="result-meta">${c.position} · ${c.faculty}</div>
+                <div class="result-name">${esc(c.full_name)} ${isWinner?'🏆':''}</div>
+                <div class="result-meta">${esc(c.faculty)}</div>
                 <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
               </div>
               <div class="result-right">
-                <div class="result-votes">${c.vote_count||0}</div>
+                <div class="result-votes">${v}</div>
                 <div class="result-pct">${pct}%</div>
               </div>
+            </div>`;
+          }).join('');
+          return `
+            <div class="post-group">
+              <div class="post-head">
+                <h3>${esc(post)}</h3>
+                <span>${rows.length} candidate${rows.length===1?'':'s'} · ${cast} vote${cast===1?'':'s'} cast</span>
+              </div>
+              ${cards}
             </div>`;
         }).join('');
       }
@@ -264,5 +320,6 @@
   init();
   setInterval(() => { if (activeElectionId) loadResults(); }, 30000);
 </script>
+<script src="chat-widget.js"></script>
 </body>
 </html>
