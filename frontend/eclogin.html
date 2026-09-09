@@ -134,7 +134,9 @@
     try {
       const res=await fetch('/api/auth/login',{
         method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({student_id,password}),
+        // Tells the server which portal this came from, so a wrong ID
+        // is reported as a Committee Member ID, not a Student ID.
+        body:JSON.stringify({student_id,password,portal:'ec'}),
       });
       const data=await res.json();
       if (!res.ok) { showMsg(data.error||'Login failed.'); btn.disabled=false; btn.textContent='Sign In to Management Panel'; return; }

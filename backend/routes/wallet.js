@@ -288,15 +288,62 @@ module.exports = function walletRoutes({ db, getContract, logAudit }) {
           const tx = await contract.registerVotersBatch(election.blockchain_id, addresses);
           const receipt = await tx.wait();
 
-          await db.query(
-            `UPDATE voter_registrations
-                SET status='registered', tx_hash=?, batch_no=?, registered_at=NOW(), error_message=NULL
-              WHERE id IN (?)`,
-            [receipt.hash, batchNo, ids]
+          /* A successful transaction does NOT mean every address in it
+             was registered. registerVotersBatch() skips an entry it
+             cannot use — a zero address, or one already registered —
+             and carries on rather than reverting, so the whole batch
+             still succeeds. Marking the slice 'registered' on that
+             basis left students shown as on-chain who were not, and
+             they would only discover it when the ballot refused them.
+             So the chain is asked who actually ended up registered. */
+          const added = new Set(
+            receipt.logs
+              .map((log) => { try { return contract.interface.parseLog(log); } catch { return null; } })
+              .filter((e) => e && e.name === "VoterRegistered")
+              .map((e) => String(e.args.voter).toLowerCase())
           );
-          registered += slice.length;
+
+          const ok = [], bad = [];
+          for (const row of slice) {
+            const addr = String(row.wallet_address || "").toLowerCase();
+            if (added.has(addr)) { ok.push(row); continue; }
+            // Not added by this transaction. Either it was already on
+            // chain from an earlier run — which is fine — or the
+            // contract skipped it.
+            try {
+              const [isRegistered] = await contract.getVoterStatus(election.blockchain_id, row.wallet_address);
+              (isRegistered ? ok : bad).push(row);
+            } catch {
+              bad.push(row);
+            }
+          }
+
+          if (ok.length) {
+            await db.query(
+              `UPDATE voter_registrations
+                  SET status='registered', tx_hash=?, batch_no=?, registered_at=NOW(), error_message=NULL
+                WHERE id IN (?)`,
+              [receipt.hash, batchNo, ok.map((r) => r.id)]
+            );
+          }
+          if (bad.length) {
+            await db.query(
+              `UPDATE voter_registrations
+                  SET status='failed', batch_no=?, tx_hash=?, error_message=?
+                WHERE id IN (?)`,
+              [batchNo, receipt.hash,
+               "The transaction succeeded but the contract did not register this address — check the wallet address is a real, non-zero address, then queue and send again.",
+               bad.map((r) => r.id)]
+            );
+          }
+
+          registered += ok.length;
+          failed += bad.length;
           batches.push({
-            batch: batchNo, count: slice.length, status: "registered",
+            batch: batchNo, count: slice.length,
+            status: bad.length ? "partial" : "registered",
+            registered: ok.length, failed: bad.length,
+            skipped: bad.map((r) => r.student_id),
             tx_hash: receipt.hash, gas_used: receipt.gasUsed?.toString() ?? null,
           });
         } catch (err) {
@@ -313,11 +360,17 @@ module.exports = function walletRoutes({ db, getContract, logAudit }) {
       await logAudit(null, "election_committee", electionId, "VOTERS_REGISTERED_BATCH",
         `${registered} registered on chain in ${batches.length} transaction(s); ${failed} failed`, req.ip);
 
+      // Name who was left behind. A batch that half worked used to be
+      // reported as a clean success, so nobody went looking.
+      const skipped = batches.flatMap((b) => b.skipped || []);
       res.json({
         success: true,
-        message: `${registered} voters registered on the blockchain in ${batches.length} transaction(s)` +
-                 (failed ? `. ${failed} failed — retry to send them again.` : "."),
-        registered, failed, chunkSize, batches,
+        message: `${registered} voter${registered === 1 ? "" : "s"} registered on the blockchain in ${batches.length} transaction(s)`
+               + (failed
+                   ? `. ${failed} could not be registered${skipped.length ? ` (${skipped.slice(0, 5).join(", ")}${skipped.length > 5 ? "…" : ""})` : ""}`
+                     + ` — they are back in the queue. Check their wallet address before sending again.`
+                   : "."),
+        registered, failed, skipped, chunkSize, batches,
       });
     } catch (err) {
       console.error(err);

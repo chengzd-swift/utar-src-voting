@@ -178,7 +178,13 @@ app.post("/api/auth/login", async (req, res) => {
   if (!student_id||!password) return res.status(400).json({ error:"Student ID and password are required" });
   try {
     const [rows] = await db.execute("SELECT * FROM users WHERE student_id=? AND is_active=1", [student_id]);
-    if (!rows.length) return res.status(401).json({ error:"Student ID not found" });
+    // Both portals post here, so the wording follows the one the person
+    // is actually looking at — a committee member mistyping EC002 was
+    // being told their "Student ID" was not found.
+    if (!rows.length)
+      return res.status(401).json({
+        error: req.body.portal === "ec" ? "Committee Member ID not found" : "Student ID not found",
+      });
     const user  = rows[0];
     const match = await bcrypt.compare(password, user.password_hash);
     if (!match) return res.status(401).json({ error:"Incorrect password" });
