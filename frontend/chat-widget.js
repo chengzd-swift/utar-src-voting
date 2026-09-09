@@ -16,6 +16,14 @@
   if (window.__srcChatLoaded) return;
   window.__srcChatLoaded = true;
 
+  /* The assistant answers students' questions about the rules. The
+     Election Committee configures it; they do not consult it, and a
+     help bubble on an administrative screen is just clutter. */
+  try {
+    var who = JSON.parse(sessionStorage.getItem('user') || 'null');
+    if (who && who.role === 'election_committee') return;
+  } catch (e) { /* no session: treat as a student, the widget is public */ }
+
   var STORE = 'src-chat-history';
   var history = [];
   try { history = JSON.parse(sessionStorage.getItem(STORE) || '[]'); } catch (e) { history = []; }

@@ -125,7 +125,29 @@
     <div class="form-row">
       <div class="field">
         <label for="fFaculty">Faculty / Institute</label>
-        <input type="text" id="fFaculty"/>
+        <!-- The same list registration offers. Typed faculty names
+             drifted from the roster's spelling, which then failed to
+             match on review. -->
+        <select id="fFaculty">
+          <option value="">— Select your faculty —</option>
+          <optgroup label="Undergraduate Programmes (by Faculty)">
+            <option>Faculty of Accountancy and Management (FAM)</option>
+            <option>Faculty of Arts and Social Science (FAS)</option>
+            <option>Faculty of Creative Industries (FCI)</option>
+            <option>Faculty of Education (FED)</option>
+            <option>Faculty of Engineering and Green Technology (FEGT)</option>
+            <option>Faculty of Information and Communication Technology (FICT)</option>
+            <option>Faculty of Science (FSC)</option>
+            <option>Institute of Chinese Studies (FCS)</option>
+            <option>Lee Kong Chian Faculty of Engineering and Science (LKC FES)</option>
+            <option>M. Kandiah Faculty of Medicine and Health Sciences (MK FMHS)</option>
+            <option>Teh Hong Piow Faculty of Business and Finance (THP FBF)</option>
+          </optgroup>
+          <optgroup label="Foundation Programme">
+            <option>Foundation in Science</option>
+            <option>Foundation in Arts</option>
+          </optgroup>
+        </select>
         <span class="hint" id="hFaculty"></span>
       </div>
       <div class="field">
@@ -144,6 +166,10 @@
     </div>
 
     <button class="btn btn-primary" id="saveBtn" onclick="saveProfile()">Save changes</button>
+    <!-- The label changes to match what pressing it will actually do:
+         contact details save on the spot, identity fields go to the
+         committee. "Save changes" alone hid that difference. -->
+    <span class="hint" id="saveHint" style="display:block;margin-top:9px"></span>
   </section>
 
   <!-- ── Wallet ───────────────────────────────────────────── -->
@@ -177,6 +203,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
 <script>
   let user = null, profile = null, editable = {}, needsReview = {}, locks = {};
+  let pendingFields = new Set();
 
   async function init() {
     user = JSON.parse(sessionStorage.getItem('user') || 'null');
@@ -199,10 +226,17 @@
     document.getElementById('fFaculty').value   = profile.faculty    || '';
     document.getElementById('fCampus').value    = profile.campus     || 'Kampar';
 
+    const requests = d.change_requests || [];
+    // A field already waiting on the committee must not be edited
+    // again — a second request would leave two answers to the same
+    // question, and the reviewer could approve the stale one.
+    pendingFields = new Set(requests.filter(r => r.status === 'pending').map(r => r.field_name));
+
     applyFieldPolicy();
     renderStatus(d);
     renderWallet();
-    renderRequests(d.change_requests || []);
+    renderRequests(requests);
+    updateSaveButton();
   }
 
   // The server decides what may change; the page only reflects it.
@@ -214,8 +248,13 @@
     for (const [field, id] of Object.entries(map)) {
       const input = document.getElementById(id);
       const hint  = document.getElementById('h' + id.slice(1));
-      input.disabled = !editable[field];
-      if (!editable[field]) {
+      const waiting = pendingFields.has(field);
+      input.disabled = !editable[field] || waiting;
+
+      if (waiting) {
+        hint.className = 'hint lock';
+        hint.textContent = 'Awaiting review — locked until the Election Committee decides. Withdraw the request below to edit it again.';
+      } else if (!editable[field]) {
         hint.className = 'hint lock';
         hint.textContent = field === 'student_id'
           ? 'Locked once your account is verified. Email dsa@utar.edu.my if it is wrong.'
@@ -227,6 +266,41 @@
         hint.className = 'hint';
         hint.textContent = 'Saves immediately.';
       }
+    }
+  }
+
+  /* Say what the button will do before it is pressed. Which it is
+     depends on what has actually been edited, so it is recomputed as
+     the student types. */
+  function updateSaveButton() {
+    const map = { student_id:'fStudentId', full_name:'fFullName', email:'fEmail',
+                  phone:'fPhone', faculty:'fFaculty', campus:'fCampus' };
+    let review = [], instant = [];
+    for (const [field, id] of Object.entries(map)) {
+      const el = document.getElementById(id);
+      if (!el || el.disabled) continue;
+      const now = (el.value || '').trim();
+      const was = (profile[field] || '');
+      if (now === String(was)) continue;
+      (needsReview[field] ? review : instant).push(labelFor(field));
+    }
+
+    const btn = document.getElementById('saveBtn');
+    const hint = document.getElementById('saveHint');
+    const list = (a) => a.length > 1 ? a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1] : a[0];
+    if (review.length) {
+      btn.textContent = '📨 Send to EC for Review';
+      hint.className = 'hint lock';
+      hint.textContent = `${list(review)} need${review.length > 1 ? '' : 's'} the Election Committee's approval`
+        + (instant.length ? `, and ${list(instant)} will save straight away.` : '. Nothing changes on your account until they approve it.');
+    } else if (instant.length) {
+      btn.textContent = '💾 Save changes';
+      hint.className = 'hint';
+      hint.textContent = `${list(instant)} save${instant.length > 1 ? '' : 's'} straight away — no review needed.`;
+    } else {
+      btn.textContent = '💾 Save changes';
+      hint.className = 'hint';
+      hint.textContent = 'Nothing has been changed yet.';
     }
   }
 
@@ -284,21 +358,47 @@
     const recent = list.slice(0, 8);
     if (!recent.length) { card.style.display = 'none'; return; }
     card.style.display = 'block';
-    box.innerHTML = recent.map(r => `
+
+    // Plain outcomes. "pending"/"approved"/"rejected" are the database's
+    // words; these are the student's.
+    const STATE = {
+      pending:  ['tag-gold',  '⏳ Awaiting review'],
+      approved: ['tag-green', '✅ Approved and applied'],
+      rejected: ['tag-red',   '❌ Not approved'],
+    };
+
+    box.innerHTML = recent.map(r => {
+      const [cls, label] = STATE[r.status] || ['tag-grey', r.status];
+      const when = r.created_at ? new Date(r.created_at).toLocaleString('en-MY') : '';
+      return `
       <div class="req">
         <div>
           <div class="req-field">${esc(labelFor(r.field_name))}</div>
-          <div class="req-vals">${esc(r.old_value || '—')} &rarr; ${esc(r.new_value)}</div>
-          ${r.review_note ? `<div class="req-vals">Note: ${esc(r.review_note)}</div>` : ''}
+          <div class="req-vals">${esc(r.old_value || '—')} &rarr; <strong style="color:var(--white)">${esc(r.new_value)}</strong></div>
+          ${when ? `<div class="req-vals">Requested ${esc(when)}</div>` : ''}
+          ${r.status === 'rejected'
+            ? `<div class="req-vals" style="color:var(--red)">Reason from the Election Committee: ${esc((r.review_note || 'no reason given').replace(/\s*[.!]\s*$/, ''))}. Your details are unchanged — correct the value and send it again, or email dsa@utar.edu.my.</div>`
+            : r.review_note ? `<div class="req-vals">Note: ${esc(r.review_note)}</div>` : ''}
+          ${r.status === 'pending'
+            ? `<div class="req-vals" style="color:var(--gold)">This field is locked until the Committee decides.</div>` : ''}
         </div>
         <div style="display:flex;align-items:center;gap:10px">
-          <span class="tag ${r.status === 'pending' ? 'tag-gold' : r.status === 'approved' ? 'tag-green' : 'tag-red'}">${esc(r.status)}</span>
+          <span class="tag ${cls}">${label}</span>
           ${r.status === 'pending' ? `<button class="btn-sm" onclick="withdrawRequest(${r.id})">Withdraw</button>` : ''}
         </div>
-      </div>`).join('');
-    if (open.length) card.querySelector('.card-sub').textContent =
-      `${open.length} change${open.length > 1 ? 's are' : ' is'} waiting for review. Your account keeps working normally in the meantime.`;
+      </div>`;
+    }).join('');
+
+    card.querySelector('.card-sub').textContent = open.length
+      ? `${open.length} change${open.length > 1 ? 's are' : ' is'} waiting for review. Those fields are locked until the Committee decides — your account keeps working normally in the meantime.`
+      : 'Everything you have sent has been decided. Your account keeps working normally throughout.';
   }
+
+  // Recompute the button's promise whenever a value changes.
+  ['fStudentId','fFullName','fEmail','fPhone','fFaculty','fCampus'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) ['input','change'].forEach(ev => el.addEventListener(ev, updateSaveButton));
+  });
 
   function labelFor(f) {
     return { full_name:'Full name', email:'Email', faculty:'Faculty', campus:'Campus', student_id:'Student ID', phone:'Phone' }[f] || f;
@@ -418,6 +518,7 @@
 
   init();
 </script>
+<script src="student-nav.js"></script>
 <script src="chat-widget.js"></script>
 </body>
 </html>

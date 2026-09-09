@@ -419,6 +419,78 @@ module.exports = function accountRoutes({ db, logAudit }) {
   // ═══════════════════════════════════════════════════════════
 
   // GET /api/ec/profile-requests?status=pending
+  // ═══════════════════════════════════════════════════════════
+  //  EC — the committee's own account
+  // ═══════════════════════════════════════════════════════════
+  //  A committee member is not a voter, so none of the student
+  //  machinery applies: no roster to match, no candidacy to protect,
+  //  and nobody above them to approve a name change. They edit their
+  //  own details directly. The session decides whose record it is —
+  //  the id is never taken from the request.
+
+  // GET /api/ec/profile
+  router.get("/ec/profile", async (req, res) => {
+    try {
+      const [[me]] = await db.execute(
+        `SELECT id, student_id, full_name, email, phone, faculty, role, created_at
+           FROM users WHERE id=? AND role='election_committee'`,
+        [req.ec.userId]
+      );
+      if (!me) return res.status(404).json({ error: "Committee account not found" });
+      res.json({ success: true, user: me });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Could not load your committee profile" });
+    }
+  });
+
+  // PUT /api/ec/profile   { full_name?, email?, phone? }
+  router.put("/ec/profile", async (req, res) => {
+    try {
+      const [[me]] = await db.execute(
+        "SELECT * FROM users WHERE id=? AND role='election_committee'", [req.ec.userId]
+      );
+      if (!me) return res.status(404).json({ error: "Committee account not found" });
+
+      const patch = {}, refused = [];
+      if (req.body.full_name !== undefined) {
+        const v = String(req.body.full_name).trim();
+        if (v.length < 2) refused.push("A name is required.");
+        else patch.full_name = v;
+      }
+      if (req.body.email !== undefined) {
+        const v = String(req.body.email).trim();
+        if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)) refused.push("Enter a valid email address.");
+        else {
+          const [clash] = await db.execute("SELECT id FROM users WHERE email=? AND id<>?", [v, me.id]);
+          if (clash.length) refused.push("That email belongs to another account.");
+          else patch.email = v;
+        }
+      }
+      if (req.body.phone !== undefined) {
+        const v = String(req.body.phone).trim();
+        patch.phone = v === "" ? null : v;
+      }
+
+      if (refused.length) return res.status(400).json({ error: refused.join(" ") });
+      if (!Object.keys(patch).length)
+        return res.json({ success: true, message: "Nothing to change.", user: me });
+
+      const sets = Object.keys(patch).map((k) => `${k}=?`).join(", ");
+      await db.execute(`UPDATE users SET ${sets} WHERE id=?`, [...Object.values(patch), me.id]);
+      await logAudit(me.id, "election_committee", null, "EC_PROFILE_UPDATED",
+        `Updated own details: ${Object.keys(patch).join(", ")}`, req.ip);
+
+      const [[fresh]] = await db.execute(
+        "SELECT id, student_id, full_name, email, phone, faculty, role FROM users WHERE id=?", [me.id]
+      );
+      res.json({ success: true, message: "Your details have been saved.", user: fresh });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Could not save your committee profile" });
+    }
+  });
+
   router.get("/ec/profile-requests", async (req, res) => {
     const { status = "pending" } = req.query;
     try {

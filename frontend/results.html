@@ -85,7 +85,7 @@
 <nav>
   <div class="nav-brand">UTAR SRC Voting</div>
   <div style="display:flex;gap:10px">
-    <button class="btn-sm" onclick="loadResults()">🔄 Refresh</button>
+    <button class="btn-sm" data-sn-extra onclick="loadResults()">🔄 Refresh</button>
     <button class="btn-sm" onclick="window.location.href='vote.html'">🗳️ Vote</button>
     <button class="btn-sm" onclick="logout()">Sign Out</button>
   </div>
@@ -148,23 +148,76 @@
       ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
   }
 
+  /* Who is looking, and therefore which campus's results they see.
+     Kampar and Sungai Long run separate elections; a student sees
+     their own campus, and the committee sees the campus their panel
+     is currently switched to. */
+  let viewer = null;
+  try { viewer = JSON.parse(sessionStorage.getItem('user') || 'null'); } catch (_) { viewer = null; }
+  const isEC = !!viewer && viewer.role === 'election_committee';
+  const viewCampus = isEC
+    ? (sessionStorage.getItem('ecCampus') || 'Kampar')
+    : (viewer && viewer.campus) || null;
+
+  /* The committee reached this page from their own panel, so it must
+     not hand them student navigation — there is no ballot for them to
+     cast and no profile of the student kind to edit. */
+  function ecChrome() {
+    const nav = document.querySelector('nav');
+    if (!nav) return;
+    nav.innerHTML = '';
+    const brand = document.createElement('div');
+    brand.className = 'nav-brand';
+    brand.textContent = 'UTAR SRC Voting';
+    const right = document.createElement('div');
+    right.style.cssText = 'display:flex;gap:10px;align-items:center;margin-left:auto;flex-wrap:wrap';
+    right.innerHTML =
+      `<span style="font-size:.78rem;font-weight:700;padding:4px 12px;border-radius:999px;` +
+      `background:rgba(245,200,66,.12);color:var(--gold);border:1px solid rgba(245,200,66,.3)">` +
+      `📍 ${esc(viewCampus)} Campus</span>` +
+      `<span style="font-size:.82rem;color:var(--muted)">🛡️ <strong style="color:var(--white)">${esc(viewer.full_name)}</strong></span>`;
+    const back = document.createElement('button');
+    back.className = 'btn-sm';
+    back.textContent = '← Back to EC Panel';
+    back.onclick = () => (location.href = 'ec.html');
+    const refresh = document.createElement('button');
+    refresh.className = 'btn-sm';
+    refresh.textContent = '🔄 Refresh';
+    refresh.onclick = () => loadResults();
+    right.appendChild(back);
+    right.appendChild(refresh);
+    nav.appendChild(brand);
+    nav.appendChild(right);
+
+    document.querySelector('.page-sub').textContent =
+      `Blockchain-verified results for ${viewCampus} Campus. Switch campus from the EC panel to see the other.`;
+  }
+
   async function init() {
+    if (isEC) ecChrome();
     await loadElectionTabs();
 
     // Auto-select from URL param
     const params = new URLSearchParams(window.location.search);
     const elId   = params.get('election');
     if (elId) selectElection(parseInt(elId));
+    else if (elections.length === 1) selectElection(elections[0].id);
   }
 
   async function loadElectionTabs() {
-    const r = await fetch('/api/elections');
+    // Scoped to one campus. Results of the other campus's election are
+    // not this viewer's business, and mixing them made the tab strip
+    // read as though everyone voted in everything.
+    const url = viewCampus
+      ? `/api/elections?campus=${encodeURIComponent(viewCampus)}`
+      : '/api/elections';
+    const r = await fetch(url);
     const d = await r.json();
     elections = d.elections || [];
 
     const tabs = document.getElementById('electionTabs');
     if (!elections.length) {
-      tabs.innerHTML = '<span style="color:var(--muted);font-size:.9rem">No elections created yet.</span>';
+      tabs.innerHTML = `<span style="color:var(--muted);font-size:.9rem">No elections yet for ${esc(viewCampus || 'your campus')}.</span>`;
       return;
     }
 
@@ -320,6 +373,7 @@
   init();
   setInterval(() => { if (activeElectionId) loadResults(); }, 30000);
 </script>
+<script src="student-nav.js"></script>
 <script src="chat-widget.js"></script>
 </body>
 </html>

@@ -182,9 +182,8 @@
     <span class="campus-pill" id="navCampus">📍 Kampar Campus</span>
   </div>
   <div style="display:flex;gap:8px;align-items:center">
-    <span style="font-size:.82rem;color:var(--muted)">👤 <strong id="navName" style="color:var(--white)">—</strong></span>
+    <button class="btn-sm" onclick="openEcProfile()" title="Your committee account">🛡️ <strong id="navName">—</strong></button>
     <button class="btn-sm" onclick="switchCampus()">🔄 Switch campus</button>
-    <button class="btn-sm" onclick="window.location.href='change-password.html'">🔑 Change PW</button>
     <button class="btn-sm" onclick="window.location.href='results.html'">📊 Results</button>
     <button class="btn-sm" onclick="logout()">Sign Out</button>
   </div>
@@ -700,6 +699,35 @@
     <div class="field"><label>Faculty</label><input type="text" id="editCandFaculty"/></div>
     <div class="field"><label>Manifesto</label><textarea id="editCandManifesto"></textarea></div>
     <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn btn-teal" onclick="confirmEditCand()">Save Changes</button></div>
+  </div>
+</div>
+
+<!-- EC's own account. A committee member is not a voter: there is no
+     roster to match them against and nobody above them to approve a
+     spelling correction, so these save straight away. -->
+<div class="modal-overlay" id="ecProfileModal">
+  <div class="modal">
+    <div class="modal-title">🛡️ My committee account</div>
+    <div class="modal-sub" id="ecProfileSub">—</div>
+    <div class="notice notice-info" style="margin-bottom:16px">
+      These are your own details as an Election Committee member. They save immediately —
+      no review, because you are the reviewer. Student records still go through the normal
+      Profile Changes queue.
+    </div>
+    <div class="form-row">
+      <div class="field"><label>Committee ID</label><input type="text" id="ecpStaffId" disabled/></div>
+      <div class="field"><label>Full name</label><input type="text" id="ecpName" placeholder="e.g. Election Chairperson"/></div>
+    </div>
+    <div class="form-row">
+      <div class="field"><label>Email</label><input type="email" id="ecpEmail" placeholder="name@utar.edu.my"/></div>
+      <div class="field"><label>Phone</label><input type="text" id="ecpPhone" placeholder="e.g. 012-3456789"/></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn" style="background:rgba(255,255,255,.06);color:var(--white);border:1px solid var(--border)"
+              onclick="window.location.href='change-password.html'">🔑 Change password</button>
+      <button class="btn btn-teal" onclick="saveEcProfile()">Save my details</button>
+    </div>
   </div>
 </div>
 
@@ -1710,6 +1738,48 @@
         <td><span class="tag tag-grey">${l.action}</span></td>
         <td style="font-size:.8rem">${l.description||'—'}</td>
       </tr>`).join('');
+  }
+
+  // ── The committee member's own account ──────────────────────
+  async function openEcProfile() {
+    document.getElementById('ecProfileModal').classList.add('open');
+    document.getElementById('ecProfileSub').textContent = 'Loading…';
+    try {
+      const r = await fetch('/api/ec/profile');
+      const d = await r.json();
+      if (!r.ok) { toast(d.error, 'error'); return; }
+      const u = d.user;
+      document.getElementById('ecProfileSub').textContent =
+        `${u.student_id} · Election Committee${u.created_at ? ' · member since ' + new Date(u.created_at).toLocaleDateString('en-MY') : ''}`;
+      document.getElementById('ecpStaffId').value = u.student_id;
+      document.getElementById('ecpName').value    = u.full_name || '';
+      document.getElementById('ecpEmail').value   = u.email || '';
+      document.getElementById('ecpPhone').value   = u.phone || '';
+    } catch {
+      toast('Could not load your account', 'error');
+    }
+  }
+
+  async function saveEcProfile() {
+    const body = {
+      full_name: document.getElementById('ecpName').value.trim(),
+      email:     document.getElementById('ecpEmail').value.trim(),
+      phone:     document.getElementById('ecpPhone').value.trim(),
+    };
+    const r = await fetch('/api/ec/profile', {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+    });
+    const d = await r.json();
+    if (!r.ok) { toast(d.error, 'error'); return; }
+    toast('✅ ' + d.message);
+    // Keep the name in the top bar and the stored session in step.
+    document.getElementById('navName').textContent = d.user.full_name;
+    try {
+      const s = JSON.parse(sessionStorage.getItem('user') || '{}');
+      s.full_name = d.user.full_name; s.email = d.user.email;
+      sessionStorage.setItem('user', JSON.stringify(s));
+    } catch (_) {}
+    closeModal();
   }
 
   // ── AI assistant configuration (v5) ─────────────────────────
