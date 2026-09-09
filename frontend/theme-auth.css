@@ -1,0 +1,178 @@
+/* theme-auth.css — UTAR SRC Voting System
+   ─────────────────────────────────────────────────────────────
+   Presentation layer for the pages you meet before signing in
+   (login, register, eclogin, change-password).
+
+   These pages use the same token names as the app pages but mean
+   different things by them — here --navy is the text colour, not
+   the ground — so they get their own sheet rather than sharing one.
+
+   Direction: the first screen a supervisor or a student sees, so
+   it carries the institution: academic blue, gold reserved for the
+   committee, generous whitespace, and paper that is off-white
+   rather than grey.
+   ───────────────────────────────────────────────────────────── */
+
+:root {
+  --bg:        #eef3fa;      /* page ground, a cool paper          */
+  --white:     #ffffff;      /* card surface                        */
+  --navy:      #10213f;      /* primary text — deep academic blue   */
+  --teal:      #2f6ec4;      /* primary action                      */
+  --teal-dark: #1f4f9a;
+  --amber:     #d9a032;      /* the committee's mark                */
+  --amber-dark:#b57f1c;
+  --muted:     #5f739a;
+  --border:    #dbe4f0;
+  --red:       #d6455c;
+
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-lg: 20px;
+  --shadow-1: 0 1px 2px rgba(16, 33, 63, .06);
+  --shadow-2: 0 18px 44px -26px rgba(16, 33, 63, .42);
+  --shadow-3: 0 30px 80px -32px rgba(16, 33, 63, .5);
+  --ring: 0 0 0 3px rgba(47, 110, 196, .16);
+}
+
+body {
+  background:
+    radial-gradient(900px 520px at 6% -10%, rgba(47, 110, 196, .09), transparent 60%),
+    radial-gradient(720px 420px at 100% 4%, rgba(217, 160, 50, .07), transparent 58%),
+    var(--bg);
+  background-attachment: fixed;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  color: var(--navy);
+}
+
+/* ── Typography ─────────────────────────────────────────── */
+h1, h2, .form-title, .left-title, .campus-h {
+  letter-spacing: -.028em;
+  text-wrap: balance;
+}
+.form-sub, .left-desc, .campus-sub, .sub { line-height: 1.68; }
+label, .field label { letter-spacing: .01em; }
+
+/* ── Full-width screens inside a flex body ──────────────────
+   body is display:flex, so a direct child sizes to its content
+   unless told otherwise. The campus chooser was therefore only as
+   wide as its own cards and sat against the left edge, centring
+   its contents inside that narrow box — invisible on a laptop,
+   obvious on a wide monitor. */
+.campus-page {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+}
+
+/* ── The split panel ────────────────────────────────────── */
+.page {
+  border-radius: 0;
+  box-shadow: var(--shadow-3);
+}
+/* Student portal: academic blue, deepening toward the fold. */
+.left {
+  background: linear-gradient(158deg, #0b1c38 0%, #14356b 52%, #2f6ec4 100%) !important;
+}
+.mesh {
+  background-image:
+    radial-gradient(circle at 18% 16%, rgba(116, 172, 245, .22) 0%, transparent 52%),
+    radial-gradient(circle at 84% 86%, rgba(217, 160, 50, .16) 0%, transparent 54%) !important;
+}
+.left-title em { color: #8dbcff !important; }
+.feat-icon {
+  background: rgba(255, 255, 255, .09) !important;
+  border: 1px solid rgba(255, 255, 255, .1);
+  border-radius: 11px !important;
+}
+.brand-icon {
+  background: linear-gradient(140deg, #4a8fe0, #2f6ec4 58%, #d9a032) !important;
+  box-shadow: 0 6px 18px -8px rgba(47, 110, 196, .8);
+}
+
+/* The committee's own entrance stays gold, so the two portals are
+   never mistaken for one another. */
+.page:has(.restricted-badge) .left,
+body:has(#staffId) .left {
+  background: linear-gradient(158deg, #1a1103 0%, #4a3308 48%, #d9a032 100%) !important;
+}
+body:has(#staffId) .brand-icon {
+  background: linear-gradient(140deg, #edc264, #d9a032 60%, #b1531f) !important;
+}
+
+/* ── Cards ──────────────────────────────────────────────── */
+.right { background: var(--white); }
+.campus-card {
+  border-radius: var(--r-lg) !important;
+  box-shadow: var(--shadow-1);
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+.campus-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-2);
+}
+.campus-card .cc-icon { border-radius: 13px !important; }
+.campus-card.kampar { border-color: rgba(47, 110, 196, .26) !important; }
+.campus-card.kampar:hover { border-color: #2f6ec4 !important; }
+.campus-card.kampar .cc-icon { background: rgba(47, 110, 196, .1) !important; color: #1f4f9a !important; }
+.campus-card.sl { border-color: rgba(122, 92, 200, .26) !important; }
+.campus-card.sl:hover { border-color: #7a5cc8 !important; }
+.campus-card.sl .cc-icon { background: rgba(122, 92, 200, .1) !important; color: #5b3fa6 !important; }
+
+/* ── Inputs ─────────────────────────────────────────────── */
+.field input, .field select, input, select, textarea {
+  border-radius: var(--r-sm) !important;
+  border-color: var(--border) !important;
+  background: #f8fafd !important;
+  transition: border-color .18s ease, box-shadow .18s ease, background-color .18s ease;
+}
+.field input:focus, .field select:focus, input:focus, select:focus, textarea:focus {
+  border-color: var(--teal) !important;
+  box-shadow: var(--ring) !important;
+  background: #fff !important;
+  outline: none;
+}
+input::placeholder { color: #93a5c2 !important; }
+:where(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: 2px;
+}
+
+/* ── Buttons ────────────────────────────────────────────── */
+.btn, .btn-primary {
+  border-radius: var(--r-sm) !important;
+  transition: transform .12s ease, box-shadow .18s ease, filter .18s ease;
+}
+.btn-primary, body:not(:has(#staffId)) .btn:not(.btn-metamask) {
+  background: linear-gradient(135deg, #3f7fd4, #1f4f9a) !important;
+  color: #fff !important;
+  box-shadow: 0 1px 0 rgba(255,255,255,.2) inset, 0 12px 26px -16px rgba(31, 79, 154, .95);
+}
+body:has(#staffId) .btn {
+  background: linear-gradient(135deg, #e0ae44, #b57f1c) !important;
+  color: #2a1e05 !important;
+  box-shadow: 0 1px 0 rgba(255,255,255,.3) inset, 0 12px 26px -16px rgba(181, 127, 28, .9);
+}
+.btn:hover:not(:disabled), .btn-primary:hover:not(:disabled) {
+  filter: brightness(1.05);
+  transform: translateY(-1px);
+}
+.btn:active:not(:disabled) { transform: translateY(0); }
+.btn-metamask { border-radius: var(--r-sm) !important; background: #f6f9fd !important; }
+.btn-metamask:hover { border-color: var(--teal) !important; background: #eef4fc !important; }
+
+/* ── Messages ───────────────────────────────────────────── */
+.msg, .default-hint, .roster-box, .campus-badge {
+  border-radius: var(--r-md) !important;
+  line-height: 1.6;
+}
+.msg.error   { background: #fdf0f2 !important; border-color: #f6ccd4 !important; color: #b3283d !important; }
+.msg.success { background: #eff9f3 !important; border-color: #bfe6d1 !important; color: #17734a !important; }
+
+/* ── Links ──────────────────────────────────────────────── */
+.footer-links a, .back a { color: var(--teal); }
+.footer-links a:hover, .back a:hover { color: var(--teal-dark); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}

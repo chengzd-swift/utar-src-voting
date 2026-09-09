@@ -148,6 +148,7 @@
     @media(max-width:640px){.endorser-grid{grid-template-columns:1fr}.form-row{grid-template-columns:1fr}}
     @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
   </style>
+  <link rel="stylesheet" href="theme-app.css"/>
 </head>
 <body>
 
@@ -200,6 +201,18 @@
     <div class="empty" id="voteEmpty">
       <div class="empty-icon">🗳️</div>
       <p>Select an active election above to see candidates and cast your vote.</p>
+    </div>
+
+    <!-- Ballot progress. Presentation only: it reads the same state the
+         chips and the hint already read, and shows how far through the
+         council a voter is rather than making them count chips. -->
+    <div class="ballot-progress" id="ballotProgress" style="display:none">
+      <div class="bp-head">
+        <span class="bp-title">Your ballot</span>
+        <span class="bp-count" id="bpCount">—</span>
+      </div>
+      <div class="bp-rail" id="bpRail"></div>
+      <div class="bp-steps" id="bpSteps"></div>
     </div>
 
     <div class="pos-filter" id="posFilter" style="display:none">
@@ -508,6 +521,31 @@
     hint.textContent = (done
       ? `✅ You have voted for ${done} of ${posts.size} post${posts.size===1?'':'s'}. One vote per post — a vote on the blockchain cannot be changed.`
       : `⚠️ One vote per post — you may vote once for each of the ${posts.size} post${posts.size===1?'':'s'}. A vote on the blockchain cannot be changed.`) + who;
+    renderBallotProgress();
+  }
+
+  /* The same counts as the hint, drawn instead of written. Reads only
+     state that already exists; changes nothing about how a vote is
+     cast. */
+  function renderBallotProgress() {
+    const wrap = document.getElementById('ballotProgress');
+    if (!wrap) return;
+    const posts = [...new Set(allCandidates.map(c => c.position))];
+    if (!posts.length) { wrap.style.display = 'none'; return; }
+
+    const done = posts.filter(p => votedPosts.has(p));
+    wrap.style.display = 'block';
+    document.getElementById('bpCount').textContent =
+      `${done.length} of ${posts.length} cast`;
+    document.getElementById('bpRail').innerHTML =
+      `<span style="width:${Math.round(done.length / posts.length * 100)}%"></span>`;
+    document.getElementById('bpSteps').innerHTML = posts.map(p => {
+      const voted = votedPosts.has(p);
+      const active = !voted && posts.find(x => !votedPosts.has(x)) === p;
+      return `<span class="bp-step ${voted ? 'is-done' : active ? 'is-next' : ''}">
+                <i>${voted ? '✓' : '•'}</i>${esc(p)}
+              </span>`;
+    }).join('');
   }
 
   /* A council ballot lists ten posts under Reg 2(1), so on a full

@@ -1,0 +1,356 @@
+/* theme-app.css — UTAR SRC Voting System
+   ─────────────────────────────────────────────────────────────
+   Presentation layer for the signed-in application pages
+   (vote, results, profile, endorse, ec).
+
+   Loaded AFTER each page's own <style>, so it re-points the design
+   tokens those pages already use rather than restyling them element
+   by element. No markup, no script, no behaviour is touched.
+
+   Direction: institutional, not crypto. UTAR's identity is a deep
+   academic blue with a gold accent, so the neon teal that read as
+   "trading app" becomes a considered blue, and gold is kept for the
+   things that genuinely deserve emphasis — winners, warnings, the
+   committee's own marks.
+   ───────────────────────────────────────────────────────────── */
+
+:root {
+  /* ── Ground and surfaces ─────────────────────────────────── */
+  --navy:  #081426;          /* page ground, deep and slightly cool  */
+  --navy2: #0e1f38;          /* raised surface (modals, popovers)    */
+  --card:  rgba(16, 33, 58, .82);
+
+  /* ── Accents ─────────────────────────────────────────────── */
+  /* The token is still called --teal because every page already
+     references it; the value is now UTAR's academic blue.        */
+  --teal:  #4a8fe0;
+  --teal2: #74acf5;
+  --gold:  #e9ba55;
+  --green: #46c193;
+  --red:   #f0798b;
+
+  /* ── Text ────────────────────────────────────────────────── */
+  --white: #e8effa;
+  --muted: #8ba4c6;
+
+  /* Hairlines pick up the blue rather than the old teal glow. */
+  --border: rgba(126, 166, 224, .17);
+
+  /* ── Scale used by the additions below ───────────────────── */
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-lg: 20px;
+  --shadow-1: 0 1px 2px rgba(2, 8, 20, .4);
+  --shadow-2: 0 10px 30px -14px rgba(2, 8, 20, .85);
+  --shadow-3: 0 24px 60px -28px rgba(2, 8, 20, .95);
+  --ring: 0 0 0 3px rgba(74, 143, 224, .32);
+}
+
+/* ── Ground ─────────────────────────────────────────────────
+   A single flat colour reads cheap at this size. Two very wide,
+   very low-opacity washes give the page depth without becoming a
+   gradient anyone would notice.                                */
+html, body {
+  background:
+    radial-gradient(1100px 620px at 12% -12%, rgba(74, 143, 224, .11), transparent 62%),
+    radial-gradient(900px 520px at 92% 0%, rgba(233, 186, 85, .055), transparent 60%),
+    var(--navy);
+  background-attachment: fixed;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* The blueprint grid was teal and sat too close to the content.
+   Same idea, quieter, and now in the page's own blue.           */
+body::before {
+  background-image:
+    linear-gradient(rgba(126, 166, 224, .035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(126, 166, 224, .035) 1px, transparent 1px) !important;
+  background-size: 56px 56px !important;
+}
+
+/* ── Typography ─────────────────────────────────────────────
+   The families stay; what changes is the setting — tighter
+   display tracking, roomier body, and labels that read as labels. */
+h1, h2, h3, .page-title, .nav-brand, .card-title, .section-title,
+.winner-name, .result-name, .cname, .stat-value, .voted-title {
+  letter-spacing: -.015em;
+  text-wrap: balance;
+}
+.page-title, .section-title { letter-spacing: -.025em; }
+.page-sub, .section-sub, .card-sub, .sub { line-height: 1.65; }
+
+.status-label, .stat-label, .picker-label, .pos-filter-label,
+.sidebar-section, .result-pct, label {
+  letter-spacing: .085em;
+}
+
+/* ── Navigation ─────────────────────────────────────────────
+   A hairline plus a blur, rather than a hard edge.              */
+nav {
+  background: rgba(8, 20, 38, .72) !important;
+  backdrop-filter: saturate(140%) blur(16px);
+  -webkit-backdrop-filter: saturate(140%) blur(16px);
+  border-bottom: 1px solid var(--border) !important;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .03), var(--shadow-1);
+}
+.nav-brand::before {
+  background: linear-gradient(140deg, var(--teal), #2c62b4 55%, var(--gold)) !important;
+  box-shadow: 0 3px 12px -3px rgba(74, 143, 224, .6);
+}
+
+/* ── Buttons ────────────────────────────────────────────────
+   Consistent height, a real pressed state, and a focus ring that
+   is visible without being loud.                                */
+.btn, .btn-sm, .btn-vote, .btn-submit, .btn-verify, .tab, .pos-chip {
+  transition: background-color .18s ease, border-color .18s ease,
+              color .18s ease, transform .12s ease, box-shadow .18s ease;
+}
+.btn-sm {
+  border-radius: var(--r-sm) !important;
+  background: rgba(255, 255, 255, .028);
+}
+.btn-sm:hover {
+  background: rgba(74, 143, 224, .12);
+  border-color: rgba(74, 143, 224, .5) !important;
+}
+.btn:active, .btn-sm:active, .btn-vote:active, .pos-chip:active { transform: translateY(1px); }
+
+.btn-primary, .btn-teal, .btn-vote, .btn-submit {
+  background: linear-gradient(135deg, #5797e4, #2f6ec4) !important;
+  color: #f2f7ff !important;
+  border: none !important;
+  box-shadow: 0 1px 0 rgba(255,255,255,.14) inset, 0 8px 22px -12px rgba(47, 110, 196, .9);
+}
+.btn-primary:hover:not(:disabled), .btn-teal:hover:not(:disabled),
+.btn-vote:hover:not(:disabled), .btn-submit:hover:not(:disabled) {
+  filter: brightness(1.07);
+  box-shadow: 0 1px 0 rgba(255,255,255,.18) inset, 0 12px 28px -12px rgba(47, 110, 196, 1);
+}
+.btn-gold {
+  background: linear-gradient(135deg, #edc264, #d69f2f) !important;
+  color: #2a1e05 !important;
+  border: none !important;
+  box-shadow: 0 1px 0 rgba(255,255,255,.28) inset, 0 8px 22px -12px rgba(214, 159, 47, .8);
+}
+.btn-danger {
+  background: linear-gradient(135deg, #ef7d8e, #d5495e) !important;
+  color: #fff !important; border: none !important;
+}
+
+:where(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--teal2);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+/* ── Cards and panels ───────────────────────────────────────
+   One elevation language: a hairline, a soft shadow, and a top
+   highlight so a card reads as lit from above.                  */
+.card, .nom-card, .stat-card, .result-card, .election-item,
+.pending-item, .my-nom-item, .verify-panel, .vote-panel,
+.election-picker, .status-bar, .candidate-card, .modal {
+  border-radius: var(--r-lg) !important;
+  box-shadow: var(--shadow-2);
+  background-image: linear-gradient(rgba(255, 255, 255, .028), rgba(255, 255, 255, 0) 120px);
+}
+.card, .nom-card, .verify-panel { padding: 28px !important; }
+.modal { box-shadow: var(--shadow-3); border-radius: var(--r-lg) !important; }
+
+.stat, .stat-card {
+  border-radius: var(--r-md) !important;
+  background: rgba(16, 33, 58, .62);
+}
+
+/* ── Candidate cards ────────────────────────────────────────
+   The single most important object on the site: it has to look
+   selectable, and unmistakable once selected.                   */
+.candidate-card {
+  border-width: 1px !important;
+  padding: 26px 22px !important;
+}
+.candidate-card:hover:not(.done) {
+  transform: translateY(-3px);
+  border-color: rgba(74, 143, 224, .55) !important;
+  box-shadow: var(--shadow-3);
+}
+.candidate-card.selected {
+  border-color: var(--teal) !important;
+  background: linear-gradient(160deg, rgba(74, 143, 224, .14), rgba(74, 143, 224, .04)) !important;
+  box-shadow: var(--shadow-2), 0 0 0 1px var(--teal) inset;
+}
+.candidate-avatar {
+  background: linear-gradient(140deg, var(--teal), #2c62b4 60%, var(--gold)) !important;
+  color: #071426 !important;
+  box-shadow: 0 6px 18px -8px rgba(74, 143, 224, .85);
+}
+.check-circle { transition: all .2s ease; }
+.candidate-card.done { filter: saturate(.5); }
+
+/* ── Post filter chips ──────────────────────────────────── */
+.pos-chip { border-radius: 999px !important; }
+.pos-chip.active {
+  background: rgba(74, 143, 224, .18) !important;
+  border-color: var(--teal) !important;
+  box-shadow: 0 0 0 1px rgba(74, 143, 224, .35);
+}
+
+/* ── Inputs ────────────────────────────────────────────── */
+input, select, textarea, .picker-select, .verify-input {
+  border-radius: var(--r-sm) !important;
+  background: rgba(6, 15, 29, .55) !important;
+  transition: border-color .18s ease, box-shadow .18s ease, background-color .18s ease;
+}
+input:focus, select:focus, textarea:focus,
+.picker-select:focus, .verify-input:focus {
+  border-color: var(--teal) !important;
+  box-shadow: var(--ring);
+  background: rgba(6, 15, 29, .75) !important;
+}
+input::placeholder, textarea::placeholder { color: rgba(139, 164, 198, .6); }
+/* The OS paints the open dropdown, so options carry their own colours. */
+select option { background: #0e1f38 !important; color: var(--white) !important; }
+select option:disabled { color: #6d84a5 !important; }
+
+/* ── Tabs ──────────────────────────────────────────────── */
+.tabs { border-radius: var(--r-md) !important; }
+.tab.active {
+  background: rgba(74, 143, 224, .16) !important;
+  color: var(--white) !important;
+  box-shadow: var(--shadow-1);
+}
+.election-tabs .tab.active { border-color: var(--teal) !important; color: var(--teal2) !important; }
+
+/* ── Results ───────────────────────────────────────────── */
+.bar-track { height: 8px !important; background: rgba(255, 255, 255, .06) !important; }
+.bar-fill {
+  background: linear-gradient(90deg, var(--teal), var(--teal2)) !important;
+  box-shadow: 0 0 14px -3px rgba(74, 143, 224, .8);
+}
+.result-card.winner {
+  border-color: rgba(233, 186, 85, .45) !important;
+  background: linear-gradient(160deg, rgba(233, 186, 85, .09), rgba(233, 186, 85, .02)) !important;
+}
+.result-card.winner .bar-fill {
+  background: linear-gradient(90deg, var(--gold), #f7d896) !important;
+  box-shadow: 0 0 14px -3px rgba(233, 186, 85, .8);
+}
+.winner-banner {
+  background: linear-gradient(140deg, rgba(74, 143, 224, .14), rgba(233, 186, 85, .07)) !important;
+  border-color: rgba(233, 186, 85, .28) !important;
+  border-radius: var(--r-lg) !important;
+  box-shadow: var(--shadow-3);
+}
+.post-head h3 { color: var(--teal2) !important; }
+
+/* ── Badges, tags, notices ─────────────────────────────── */
+.tag, .pill, .section-badge, .ec-badge, .campus-pill { letter-spacing: .02em; }
+.tag-green { background: rgba(70, 193, 147, .14) !important; color: var(--green) !important; }
+.tag-gold  { background: rgba(233, 186, 85, .14) !important; color: var(--gold) !important; }
+.tag-red   { background: rgba(240, 121, 139, .14) !important; color: var(--red) !important; }
+.tag-teal  { background: rgba(74, 143, 224, .14) !important; color: var(--teal2) !important; }
+.notice { border-radius: var(--r-md) !important; line-height: 1.65; }
+.notice-info { background: rgba(74, 143, 224, .07) !important; border-color: rgba(74, 143, 224, .22) !important; }
+
+/* ── EC panel ──────────────────────────────────────────── */
+.sidebar { border-right: 1px solid var(--border); }
+.sidebar-link { border-radius: var(--r-sm) !important; transition: all .16s ease; }
+.sidebar-link:hover { background: rgba(74, 143, 224, .09); }
+.sidebar-link.active {
+  background: linear-gradient(90deg, rgba(74, 143, 224, .18), transparent) !important;
+  border-left: 3px solid var(--teal) !important;
+}
+table th { letter-spacing: .09em; }
+tbody tr { transition: background-color .15s ease; }
+tbody tr:hover { background: rgba(74, 143, 224, .05); }
+
+/* ── Blockchain feedback ───────────────────────────────── */
+.tx-hash, .batch-log {
+  border-radius: var(--r-sm) !important;
+  background: rgba(4, 12, 24, .75) !important;
+  border: 1px solid var(--border);
+}
+.voted-banner {
+  border-radius: var(--r-lg) !important;
+  background: linear-gradient(160deg, rgba(70, 193, 147, .1), rgba(74, 143, 224, .05)) !important;
+  border-color: rgba(70, 193, 147, .3) !important;
+  box-shadow: var(--shadow-3);
+}
+.voted-title { color: var(--green) !important; }
+.dot { box-shadow: 0 0 10px currentColor; }
+
+/* ── Ballot progress ────────────────────────────────────────
+   How far through the council this voter is. A council election
+   is several decisions, and a bare "1 of 2 posts" line did not
+   convey that the ballot is still open.                          */
+.ballot-progress {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 20px 24px;
+  margin-bottom: 22px;
+  box-shadow: var(--shadow-2);
+  background-image: linear-gradient(rgba(255, 255, 255, .028), rgba(255, 255, 255, 0) 90px);
+}
+.bp-head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 12px; margin-bottom: 12px;
+}
+.bp-title {
+  font-family: 'Syne', sans-serif; font-weight: 700; font-size: .95rem;
+  letter-spacing: -.01em;
+}
+.bp-count {
+  font-size: .78rem; font-weight: 600; color: var(--teal2);
+  letter-spacing: .04em; font-variant-numeric: tabular-nums;
+}
+.bp-rail {
+  height: 6px; border-radius: 999px; overflow: hidden;
+  background: rgba(255, 255, 255, .07);
+}
+.bp-rail > span {
+  display: block; height: 100%; border-radius: 999px;
+  background: linear-gradient(90deg, var(--teal), var(--teal2));
+  box-shadow: 0 0 14px -2px rgba(74, 143, 224, .9);
+  transition: width .5s cubic-bezier(.4, 0, .2, 1);
+}
+.bp-steps { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.bp-step {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 5px 12px 5px 8px; border-radius: 999px;
+  font-size: .78rem; color: var(--muted);
+  border: 1px solid var(--border); background: rgba(255, 255, 255, .022);
+}
+.bp-step i {
+  font-style: normal; width: 17px; height: 17px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: .66rem; background: rgba(255, 255, 255, .08); color: var(--muted);
+}
+.bp-step.is-done { color: var(--white); border-color: rgba(70, 193, 147, .38); }
+.bp-step.is-done i { background: var(--green); color: #04241a; font-weight: 700; }
+.bp-step.is-next { color: var(--white); border-color: var(--teal); box-shadow: var(--ring); }
+.bp-step.is-next i { background: var(--teal); color: #06182e; }
+
+/* ── Transaction receipt ────────────────────────────────────
+   A hash is reassurance, but only if it reads as a record rather
+   than as debug output.                                          */
+.tx-hash {
+  display: inline-block; padding: 10px 14px !important;
+  font-size: .78rem !important; letter-spacing: .02em;
+  color: var(--teal2) !important;
+  border-left: 3px solid var(--teal) !important;
+  word-break: break-all; max-width: 100%;
+}
+.voted-icon { filter: drop-shadow(0 6px 18px rgba(70, 193, 147, .45)); }
+
+/* ── Toast ─────────────────────────────────────────────── */
+.toast {
+  border-radius: var(--r-md) !important;
+  background: rgba(14, 31, 56, .97) !important;
+  box-shadow: var(--shadow-3);
+  backdrop-filter: blur(10px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
