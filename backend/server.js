@@ -19,7 +19,7 @@ const { ethers } = require("ethers");
 const path       = require("path");
 const fs         = require("fs");
 const { describeContractError, sendTx } = require("./lib/contractError");
-const { ensureSessionTable, createSession, destroySession, requireEC, bearer } = require("./lib/ecAuth");
+const { ensureSessionTable, createSession, destroySession, requireEC, bearer, sessionUser } = require("./lib/ecAuth");
 const { ensureChatbotTable } = require("./lib/chatbot");
 
 const app  = express();
@@ -195,13 +195,14 @@ app.post("/api/auth/login", async (req, res) => {
     await logAudit(user.id, user.role, null, "LOGIN", `${student_id} logged in`, req.ip);
 
     // An Election Committee member gets a session token; every
-    // /api/ec/* request has to present it. Students do not need one —
-    // none of their routes are behind the EC guard.
-    let ecToken = null;
-    if (user.role === "election_committee") {
-      const session = await createSession(db, user.id, req.ip);
-      ecToken = session.token;
-    }
+    // /api/ec/* request has to present it. A student gets one too, for
+    // routes that must know who is asking rather than take the page's
+    // word for it — checking their own ballot. Both live in the same
+    // table; the EC guard re-reads the role, so a student token opens
+    // nothing there.
+    const session = await createSession(db, user.id, req.ip);
+    const ecToken      = user.role === "election_committee" ? session.token : null;
+    const studentToken = user.role === "student"            ? session.token : null;
 
     res.json({
       success: true,
@@ -209,6 +210,7 @@ app.post("/api/auth/login", async (req, res) => {
       accountStatus: pendingReview ? "pending" : "active",
       approvalNote: user.approval_note || null,
       ecToken,
+      studentToken,
       user: {
         id: user.id, student_id: user.student_id, full_name: user.full_name,
         email: user.email, faculty: user.faculty, campus: user.campus,
@@ -223,7 +225,7 @@ app.post("/api/auth/login", async (req, res) => {
   }
 });
 
-// ── Sign out (Election Committee) ─────────────────────────────
+// ── Sign out (Election Committee and students) ────────────────
 // Revokes the token so it cannot be replayed from another machine.
 app.post("/api/auth/logout", async (req, res) => {
   try { await destroySession(db, bearer(req)); } catch (_) {}
@@ -345,11 +347,53 @@ app.get("/api/elections/:electionId/results", async (req, res) => {
 app.get("/api/elections/:electionId/voter-status/:wallet", async (req, res) => {
   const { electionId, wallet } = req.params;
   if (!contract) return res.status(503).json({ error:"Blockchain not connected" });
+  // Accept an address in any letter case; a mistyped mixed-case one
+  // would otherwise fail its checksum and surface as a server error.
+  let address;
+  try { address = ethers.getAddress(String(wallet).trim().toLowerCase()); }
+  catch { return res.status(400).json({ error:"That is not a valid wallet address" }); }
   try {
+    // Ballot secrecy. Every VoteCast event is public on the chain, but this
+    // route turns one into a readable "who voted for whom" — so the server,
+    // not the page, decides whose ballot may be shown: only the signed-in
+    // student's own linked wallet. The check runs before the blockchain is
+    // read, so a refusal reveals nothing about whether that wallet voted.
+    const viewer = await sessionUser(db, bearer(req));
+    if (!viewer)
+      return res.status(401).json({ error:"Please sign out and sign in again to verify your ballot.", code:"SIGN_IN_REQUIRED" });
+    if (viewer.role !== "student")
+      return res.status(403).json({ error:"Ballot verification is only for students checking their own ballot.", code:"STUDENTS_ONLY" });
+    let own = null;
+    try { own = viewer.wallet_address ? ethers.getAddress(viewer.wallet_address.toLowerCase()) : null; } catch { own = null; }
+    if (!own)
+      return res.status(403).json({ error:"Your account has no linked wallet yet. Link one from My Profile, then verify your ballot.", code:"NO_WALLET" });
+    if (own !== address)
+      return res.status(403).json({ error:"You cannot check another student's voting ballot. Enter the wallet address linked to your own account.", code:"NOT_OWN_WALLET" });
+
     const [elRows] = await db.execute("SELECT * FROM elections WHERE id=?", [electionId]);
     if (!elRows.length) return res.status(404).json({ error:"Election not found" });
-    const [isRegistered,hasVoted,votedCandidateId,votedAt]=await contract.getVoterStatus(elRows[0].blockchain_id, wallet);
-    res.json({ success:true, isRegistered, hasVoted, votedCandidateId:Number(votedCandidateId), votedAt:Number(votedAt) });
+    const bcId = elRows[0].blockchain_id;
+    const [isRegistered,hasVoted,votedCandidateId,votedAt]=await contract.getVoterStatus(bcId, address);
+
+    // A council ballot is one vote per post, but getVoterStatus keeps only
+    // the most recent one — so "candidate #1" was all a voter could see,
+    // whichever post that was. Every vote emitted its own VoteCast event,
+    // so the chain's log is the full, per-post receipt. Candidate names
+    // and posts are read from the contract too, not the database, so the
+    // answer is the blockchain's own.
+    const votes = [];
+    if (hasVoted) {
+      const logs = await contract.queryFilter(contract.filters.VoteCast(bcId, address), 0, "latest");
+      for (const log of logs) {
+        const id = Number(log.args.candidateId);
+        const c  = await contract.candidates(bcId, id);
+        votes.push({
+          position: c.position, candidateId: id, candidateName: c.name, faculty: c.faculty,
+          votedAt: Number(log.args.timestamp), txHash: log.transactionHash,
+        });
+      }
+    }
+    res.json({ success:true, isRegistered, hasVoted, votedCandidateId:Number(votedCandidateId), votedAt:Number(votedAt), votes });
   } catch (err) { res.status(500).json({ error:"Failed to get voter status" }); }
 });
 

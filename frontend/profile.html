@@ -88,7 +88,7 @@
 
 <main class="main">
   <h1>My profile</h1>
-  <p class="sub">Keep your details accurate. Contact details save immediately; changes to your name, faculty or campus after your account is verified go to the Election Committee first, so their check stays meaningful.</p>
+  <p class="sub">Keep your details accurate. Contact details save immediately. Your student ID, name and email are fixed once your account is verified. Faculty and campus changes go to the Election Committee, and are locked while voting is under way on your campus.</p>
 
   <div id="statusNotice"></div>
 
@@ -203,7 +203,7 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
 <script>
-  let user = null, profile = null, editable = {}, needsReview = {}, locks = {};
+  let user = null, profile = null, editable = {}, needsReview = {}, locks = {}, lockReasons = {};
   let pendingFields = new Set();
 
   async function init() {
@@ -219,6 +219,7 @@
     if (!r.ok) { toast(d.error, 'error'); return; }
 
     profile = d.user; editable = d.editable; needsReview = d.needs_review; locks = d.locks;
+    lockReasons = d.lock_reasons || {};
 
     document.getElementById('fStudentId').value = profile.student_id || '';
     document.getElementById('fFullName').value  = profile.full_name  || '';
@@ -256,10 +257,15 @@
         hint.className = 'hint lock';
         hint.textContent = 'Awaiting review — locked until the Election Committee decides. Withdraw the request below to edit it again.';
       } else if (!editable[field]) {
+        /* The server says why each field is locked. The page used to
+           carry one sentence for all of them, so a student who was
+           merely mid-election was told their name was on the
+           blockchain candidate record when no nomination existed. */
         hint.className = 'hint lock';
-        hint.textContent = field === 'student_id'
-          ? 'Locked once your account is verified. Email dsa@utar.edu.my if it is wrong.'
-          : 'Locked while your nomination is under review — this name is already on the blockchain candidate record.';
+        hint.textContent = lockReasons[field]
+          || (field === 'student_id'
+                ? 'Locked once your account is verified. Email dsa@utar.edu.my if it is wrong.'
+                : 'Locked — see the Election Committee if this is wrong.');
       } else if (needsReview[field]) {
         hint.className = 'hint';
         hint.textContent = 'Goes to the Election Committee for review.';
@@ -515,7 +521,7 @@
     el.className = `toast ${type} show`;
     setTimeout(() => { el.className = `toast ${type}`; }, 4200);
   }
-  function logout() { sessionStorage.clear(); window.location.href = 'login.html'; }
+  function logout() { const t = sessionStorage.getItem('studentToken'); if (t) fetch('/api/auth/logout', { method: 'POST', headers: { Authorization: 'Bearer ' + t }, keepalive: true }).catch(() => {}); sessionStorage.clear(); window.location.href = 'login.html'; }
 
   init();
 </script>

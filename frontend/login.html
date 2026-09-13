@@ -323,6 +323,7 @@
 
       /* ── Persist session ───────────────────────────────── */
       sessionStorage.setItem('user', JSON.stringify(data.user));
+      if (data.studentToken) sessionStorage.setItem('studentToken', data.studentToken);
 
       /* ── First-login: force password change ────────────── */
       if (data.mustChangePassword) {

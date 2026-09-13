@@ -75,6 +75,18 @@
     .btn-verify{padding:10px 20px;border-radius:10px;border:none;background:var(--teal);color:var(--navy);font-family:'Syne',sans-serif;font-weight:700;font-size:.85rem;cursor:pointer}
     .verify-result{margin-top:12px;font-size:.85rem;color:var(--teal2);display:none}
     .verify-result.visible{display:block}
+    .vr-denied{color:var(--gold)}
+    /* Per-post receipt: one row for each post the wallet voted on. */
+    .vr-head{font-weight:600;margin-bottom:12px}
+    .vr-list{display:flex;flex-direction:column;border:1px solid var(--border);border-radius:12px;overflow:hidden}
+    .vr-row{display:grid;grid-template-columns:minmax(150px,1fr) 2fr minmax(170px,1.2fr);gap:14px;align-items:center;padding:12px 16px;border-top:1px solid var(--border);color:var(--white)}
+    .vr-row:first-child{border-top:none}
+    .vr-post{font-size:.72rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+    .vr-cand strong{display:block;font-family:'Syne',sans-serif;font-size:.95rem}
+    .vr-meta{display:block;font-size:.76rem;color:var(--muted);margin-top:2px}
+    .vr-when{font-size:.78rem;color:var(--muted);text-align:right}
+    .vr-tx{display:block;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.7rem;color:var(--teal2);margin-top:3px}
+    @media(max-width:640px){.vr-row{grid-template-columns:1fr}.vr-when{text-align:left}}
 
     .empty{text-align:center;padding:60px 24px;color:var(--muted)}
     .empty-icon{font-size:3rem;margin-bottom:16px}
@@ -131,7 +143,7 @@
   <!-- Verify -->
   <div class="verify-panel" id="verifyPanel" style="display:none">
     <div class="verify-title">🔍 Verify Your Vote</div>
-    <div class="verify-sub">Enter your wallet address to confirm your vote is recorded on the blockchain for this election.</div>
+    <div class="verify-sub">Enter the wallet address linked to your account to see the ballot you cast in this election. To keep every ballot secret, you can only check your own.</div>
     <div class="verify-input-row">
       <input class="verify-input" id="verifyInput" placeholder="0x..."/>
       <button class="btn-verify" onclick="verifyVote()">Verify</button>
@@ -196,6 +208,9 @@
 
   async function init() {
     if (isEC) ecChrome();
+    // Offer the student's own linked wallet — the only one they may check.
+    if (!isEC && viewer && viewer.wallet_address)
+      document.getElementById('verifyInput').value = viewer.wallet_address;
     await loadElectionTabs();
 
     // Auto-select from URL param
@@ -339,7 +354,8 @@
         }).join('');
       }
 
-      document.getElementById('verifyPanel').style.display = 'block';
+      // The committee has no ballot of its own, and must not read anyone else's.
+      document.getElementById('verifyPanel').style.display = isEC ? 'none' : 'block';
       document.getElementById('lastUpdated').textContent = new Date().toLocaleTimeString('en-MY');
     } catch {
       document.getElementById('resultsList').innerHTML =
@@ -347,16 +363,44 @@
     }
   }
 
+  const VERIFY_POST_ORDER = ['Chairperson','Vice Chairperson','Secretary','Treasurer','Auditor 1','Auditor 2',
+                             'Faculty/Institute Representative','Campus Wide Representative',
+                             'International Representative','Postgraduate Representative'];
+  const escHtml = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
   async function verifyVote() {
     const addr = document.getElementById('verifyInput').value.trim();
     const el   = document.getElementById('verifyResult');
     if (!addr || !activeElectionId) { el.textContent='Please enter a wallet address.'; el.className='verify-result visible'; return; }
 
     try {
-      const r = await fetch(`/api/elections/${activeElectionId}/voter-status/${addr}`);
+      const token = sessionStorage.getItem('studentToken');
+      const r = await fetch(`/api/elections/${activeElectionId}/voter-status/${encodeURIComponent(addr)}`,
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} });
       const d = await r.json();
-      if (d.hasVoted) {
-        el.textContent = `✅ Vote confirmed on blockchain. Voted for candidate #${d.votedCandidateId} at ${new Date(d.votedAt*1000).toLocaleString('en-MY')}.`;
+      if (!r.ok) {
+        // The server decides whose ballot may be shown; say plainly why not.
+        const icon = { NOT_OWN_WALLET: '🔒', STUDENTS_ONLY: '🔒', NO_WALLET: '👛', SIGN_IN_REQUIRED: '🔑' }[d.code] || '❌';
+        el.innerHTML = `<span class="vr-denied">${icon} ${escHtml(d.error || 'Verification failed.')}</span>`;
+      } else if (d.hasVoted) {
+        /* One row per post, in Reg 2(1) order, each naming the candidate
+           and the transaction that recorded it — a council ballot is
+           several votes, and the old line showed only the last one. */
+        const votes = (d.votes || []).slice().sort((a, b) => {
+          const ia = VERIFY_POST_ORDER.indexOf(a.position), ib = VERIFY_POST_ORDER.indexOf(b.position);
+          return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+        });
+        const when = (t) => new Date(t * 1000).toLocaleString('en-MY');
+        el.innerHTML = votes.length
+          ? `<div class="vr-head">✅ ${votes.length} vote${votes.length === 1 ? '' : 's'} confirmed on the blockchain for this election</div>
+             <div class="vr-list">${votes.map(v => `
+               <div class="vr-row">
+                 <div class="vr-post">${escHtml(v.position)}</div>
+                 <div class="vr-cand"><strong>${escHtml(v.candidateName)}</strong><span class="vr-meta">${escHtml(v.faculty || '')}</span></div>
+                 <div class="vr-when">${when(v.votedAt)}<span class="vr-tx" title="${escHtml(v.txHash)}">Tx ${escHtml(v.txHash.slice(0, 10))}…${escHtml(v.txHash.slice(-6))}</span></div>
+               </div>`).join('')}
+             </div>`
+          : `<div class="vr-head">✅ Vote confirmed on the blockchain — last recorded ${when(d.votedAt)}.</div>`;
       } else if (d.isRegistered) {
         el.textContent = '📋 Wallet is registered for this election but has not voted yet.';
       } else {
@@ -369,7 +413,7 @@
     }
   }
 
-  function logout() { sessionStorage.clear(); window.location.href = 'login.html'; }
+  function logout() { const t = sessionStorage.getItem('studentToken'); if (t) fetch('/api/auth/logout', { method: 'POST', headers: { Authorization: 'Bearer ' + t }, keepalive: true }).catch(() => {}); sessionStorage.clear(); window.location.href = 'login.html'; }
 
   init();
   setInterval(() => { if (activeElectionId) loadResults(); }, 30000);

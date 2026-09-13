@@ -480,20 +480,43 @@ module.exports = function nominationRoutes({ db, getContract, logAudit }) {
   router.get("/nominations/positions/:userId", async (req, res) => {
     try {
       const [[nominee]] = await db.execute(
-        "SELECT id, study_level, is_international FROM users WHERE id=? AND role='student'",
+        "SELECT id, study_level, is_international, faculty, campus FROM users WHERE id=? AND role='student'",
         [req.params.userId]
       );
       if (!nominee) return res.status(404).json({ error: "Student account not found" });
 
+      // Reg 2(1)(g): the Faculty/Institute Representative seat belongs to
+      // one faculty, not to the campus at large — an FICT student stands
+      // for FICT and nobody else. The stored position string stays
+      // "Faculty/Institute Representative" (the nomination record carries
+      // the faculty separately in faculty_scope, and the candidate list on
+      // chain is grouped by that exact post name), so this only names the
+      // seat the student would actually be standing for.
+      const facultyAbbr = (nominee.faculty || "").match(/\(([^)]+)\)\s*$/);
+      const facultyScope = facultyAbbr ? facultyAbbr[1] : nominee.faculty || null;
+
       const positions = SRC_POSITIONS.map((position) => {
         const verdict = checkPositionEligibility(position, nominee);
+        const scoped =
+          position === "Faculty/Institute Representative" && verdict.eligible && facultyScope;
+        // Reg 2(1)(h) likewise: the Campus Wide Representative sits on this
+        // campus's SRC. Standing in another campus's election is already
+        // refused on submit (nominee.campus must equal election.campus);
+        // this names the campus on the form so the student sees it first.
+        const campusScoped =
+          position === "Campus Wide Representative" && verdict.eligible && nominee.campus;
         return {
           position,
+          label: scoped ? `${position} — ${facultyScope}`
+               : campusScoped ? `${position} — ${nominee.campus}`
+               : position,
+          faculty_scope: scoped ? nominee.faculty : null,
+          campus_scope: campusScoped ? nominee.campus : null,
           eligible: verdict.eligible,
           reason: verdict.reasons[0] || null,
         };
       });
-      res.json({ success: true, positions });
+      res.json({ success: true, positions, faculty: nominee.faculty || null, campus: nominee.campus || null });
     } catch (err) {
       console.error(err);
       res.status(500).json({ error: "Could not load the list of posts" });

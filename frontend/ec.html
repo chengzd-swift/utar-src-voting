@@ -47,6 +47,14 @@
     .field input,.field select,.field textarea{width:100%;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:9px;padding:10px 13px;font-size:.9rem;color:var(--white);font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s}
     .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--gold)}
     .field textarea{resize:vertical;min-height:70px}
+    /* A date input's calendar button and its drop-down panel are drawn
+       by the browser, which assumes a light page and paints the icon
+       near-black — invisible on this navy field. Declaring the colour
+       scheme lets it paint the icon light and the picker panel dark,
+       rather than inverting an icon that would then fight the popup. */
+    input[type=date],input[type=time],input[type=datetime-local]{color-scheme:dark}
+    input[type=date]::-webkit-calendar-picker-indicator{opacity:.65;cursor:pointer;transition:opacity .15s}
+    input[type=date]:hover::-webkit-calendar-picker-indicator{opacity:1}
     /* The dropdown list itself is drawn by the OS, not the page, so it
        ignores the dark colours set on the <select> and falls back to a
        white list — light text on white, invisible until hovered. Every
@@ -171,6 +179,34 @@
     .details-card[open] > summary::after{transform:rotate(90deg)}
     .batch-log{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.73rem;line-height:1.7;background:rgba(11,22,40,.75);border:1px solid var(--border);border-radius:9px;padding:13px;margin-top:14px;max-height:250px;overflow:auto;white-space:pre-wrap;word-break:break-all}
     textarea.csv:focus{border-color:var(--gold)}
+
+    /* ── Field hints ───────────────────────────────────────
+       .hint was used in the markup but never defined, so every
+       explanatory line rendered at full body weight and colour and
+       competed with the control it was explaining. */
+    .hint{font-size:.78rem;line-height:1.6;color:var(--muted);margin-top:7px}
+    .hint code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.73rem;background:rgba(255,255,255,.06);padding:2px 6px;border-radius:5px}
+
+    /* ── Model-behaviour controls ──────────────────────────
+       Four settings, one tile each. Previously they were three
+       sliders in a row with paragraphs of unequal length beneath
+       and the token box stranded below, so nothing lined up. */
+    .param-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:18px}
+    .param{display:flex;flex-direction:column;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:13px;padding:17px 19px 16px}
+    .param-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+    .param-name{font-size:.71rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+    .param-val{font-family:'Syne',sans-serif;font-size:1.25rem;font-weight:700;color:var(--gold);line-height:1;font-variant-numeric:tabular-nums}
+    .param-unit{font-size:.7rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);opacity:.85}
+    .param-lead{font-size:.85rem;font-weight:600;margin:9px 0 12px;line-height:1.45}
+    .param-ctl{margin-top:auto}
+    .param input[type=range]{width:100%;height:20px;margin:0;cursor:pointer;accent-color:var(--teal);background:transparent}
+    .param input[type=number]{width:100%;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:9px;padding:9px 13px;font-size:.9rem;color:var(--white);font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s}
+    .param input[type=number]:focus{border-color:var(--gold)}
+    .param-scale{display:flex;justify-content:space-between;font-size:.68rem;color:var(--muted);opacity:.7;font-variant-numeric:tabular-nums;margin-top:-2px}
+    .param-desc{font-size:.78rem;line-height:1.6;color:var(--muted);margin-bottom:13px}
+    .param-tip{align-self:flex-start;margin-top:13px;font-size:.72rem;line-height:1.45;font-weight:500;color:var(--teal);background:rgba(0,194,168,.09);border:1px solid rgba(0,194,168,.24);border-radius:8px;padding:6px 11px}
+    .param-tip.muted{color:var(--muted);background:rgba(255,255,255,.04);border-color:var(--border)}
+    @media(max-width:1080px){.param-grid{grid-template-columns:1fr}}
   </style>
   <link rel="stylesheet" href="theme-app.css"/>
 </head>
@@ -196,12 +232,12 @@
     <button class="sidebar-link active" onclick="showSection('dashboard',this)"><span>📋 Dashboard</span></button>
 
     <div class="sidebar-section">Student Management</div>
+    <button class="sidebar-link" onclick="showSection('students',this)"><span>👥 All Students</span></button>
+    <button class="sidebar-link" onclick="showSection('roster',this)"><span>📇 Student Roster</span></button>
     <button class="sidebar-link" onclick="showSection('pending',this)">
       <span>⏳ Pending Approvals</span>
       <span class="badge-count" id="pendingCount" style="display:none">0</span>
     </button>
-    <button class="sidebar-link" onclick="showSection('students',this)"><span>👥 All Students</span></button>
-    <button class="sidebar-link" onclick="showSection('roster',this)"><span>📇 Student Roster</span></button>
     <button class="sidebar-link" onclick="showSection('changes',this)">
       <span>✏️ Profile Changes</span>
       <span class="badge-count" id="changeCount" style="display:none">0</span>
@@ -552,40 +588,80 @@
 
       <div class="card">
         <div class="card-title">🎛️ Model behaviour</div>
-        <p class="step-note" style="margin-top:0">
-          Lower temperature keeps answers close to the regulations. This assistant
-          quotes rules rather than brainstorming, so 0.2–0.4 suits it. Top-k applies
-          to Google models only.
+        <p class="step-note" style="margin-top:0;margin-bottom:0">
+          How the assistant writes, not what it knows. The defaults suit an assistant
+          that quotes regulations rather than brainstorms.
         </p>
-        <div class="form-row-3" style="margin-top:14px">
-          <div class="field">
-            <label>Temperature <span id="tempVal" style="color:var(--gold)">0.3</span></label>
-            <input type="range" id="botTemp" min="0" max="1.5" step="0.05" value="0.3"
-                   oninput="document.getElementById('tempVal').textContent=this.value"/>
-            <div class="hint"><strong>How much it varies its wording.</strong> At 0 the same question gets
-              almost the same answer every time; at 1.5 it rephrases freely and starts paraphrasing rules
-              loosely. <em>Keep it 0.2–0.4 — this assistant quotes regulations.</em></div>
+
+        <div class="param-grid">
+          <div class="param">
+            <div class="param-head">
+              <span class="param-name">Temperature</span>
+              <span class="param-val" id="tempVal">0.3</span>
+            </div>
+            <div class="param-lead">How much the wording varies</div>
+            <div class="param-desc">
+              At 0 the same question gets almost the same answer every time. At 1.5 it
+              rephrases freely and starts paraphrasing the regulations loosely.
+            </div>
+            <div class="param-ctl">
+              <input type="range" id="botTemp" min="0" max="1.5" step="0.05" value="0.3"
+                     oninput="document.getElementById('tempVal').textContent=this.value"/>
+              <div class="param-scale"><span>0</span><span>1.5</span></div>
+            </div>
+            <div class="param-tip">Recommended 0.2 – 0.4</div>
           </div>
-          <div class="field">
-            <label>Top-p <span id="toppVal" style="color:var(--gold)">0.9</span></label>
-            <input type="range" id="botTopP" min="0.1" max="1" step="0.05" value="0.9"
-                   oninput="document.getElementById('toppVal').textContent=this.value"/>
-            <div class="hint"><strong>How wide a pool of words it picks from.</strong> 0.9 keeps the most
-              likely 90% and ignores the odd tail. <em>Leave at 0.9 — adjust temperature or this, not both.</em></div>
+
+          <div class="param">
+            <div class="param-head">
+              <span class="param-name">Top-p</span>
+              <span class="param-val" id="toppVal">0.9</span>
+            </div>
+            <div class="param-lead">How wide a pool of words it picks from</div>
+            <div class="param-desc">
+              0.9 keeps the most likely 90% of candidate words at each step and ignores
+              the unlikely tail.
+            </div>
+            <div class="param-ctl">
+              <input type="range" id="botTopP" min="0.1" max="1" step="0.05" value="0.9"
+                     oninput="document.getElementById('toppVal').textContent=this.value"/>
+              <div class="param-scale"><span>0.1</span><span>1</span></div>
+            </div>
+            <div class="param-tip">Leave at 0.9 — tune this or temperature, not both</div>
           </div>
-          <div class="field">
-            <label>Top-k <span id="topkVal" style="color:var(--gold)">40</span></label>
-            <input type="range" id="botTopK" min="1" max="100" step="1" value="40"
-                   oninput="document.getElementById('topkVal').textContent=this.value"/>
-            <div class="hint"><strong>A hard cap on that pool: at most 40 candidate words.</strong>
-              <em>Google models only — OpenAI and OpenRouter ignore it.</em></div>
+
+          <div class="param">
+            <div class="param-head">
+              <span class="param-name">Top-k</span>
+              <span class="param-val" id="topkVal">40</span>
+            </div>
+            <div class="param-lead">A hard cap on that pool</div>
+            <div class="param-desc">
+              At most 40 candidate words are considered at each step, however wide
+              Top-p would otherwise allow.
+            </div>
+            <div class="param-ctl">
+              <input type="range" id="botTopK" min="1" max="100" step="1" value="40"
+                     oninput="document.getElementById('topkVal').textContent=this.value"/>
+              <div class="param-scale"><span>1</span><span>100</span></div>
+            </div>
+            <div class="param-tip muted">Google models only — OpenAI and OpenRouter ignore it</div>
           </div>
-        </div>
-        <div class="field" style="max-width:340px">
-          <label>Maximum reply length (tokens)</label>
-          <input type="number" id="botMaxTokens" min="64" max="4000" step="32" value="700"/>
-          <div class="hint"><strong>Where the answer gets cut off.</strong> Roughly ¾ of a word per token,
-            so 700 ≈ 500 words. <em>600–800 fits a full Regulation 4 answer without overflowing the chat panel.</em></div>
+
+          <div class="param">
+            <div class="param-head">
+              <span class="param-name">Maximum reply length</span>
+              <span class="param-unit">tokens</span>
+            </div>
+            <div class="param-lead">Where the answer gets cut off</div>
+            <div class="param-desc">
+              Roughly ¾ of a word per token, so 700 tokens is about 500 words.
+            </div>
+            <div class="param-ctl">
+              <input type="number" id="botMaxTokens" min="64" max="4000" step="32" value="700"/>
+            </div>
+            <div class="param-tip">600 – 800 fits a full Regulation 4 answer</div>
+          </div>
         </div>
       </div>
 

@@ -88,4 +88,24 @@ function requireEC(db) {
   };
 }
 
-module.exports = { ensureSessionTable, createSession, destroySession, requireEC, bearer };
+/**
+ * Who holds this token, whatever their role. For routes that must know
+ * who is asking but are not committee-only — a student checking their
+ * own ballot. The table is shared with the committee, but requireEC
+ * re-reads the role, so a student's token opens nothing under /api/ec.
+ * Returns null for a missing, unknown or expired token, or an inactive
+ * account.
+ */
+async function sessionUser(db, token) {
+  if (!token) return null;
+  const [rows] = await db.execute(
+    `SELECT u.id, u.role, u.is_active, u.wallet_address
+       FROM ec_sessions s JOIN users u ON u.id = s.user_id
+      WHERE s.token=? AND s.expires_at > NOW()`,
+    [token]
+  );
+  if (!rows.length || !rows[0].is_active) return null;
+  return rows[0];
+}
+
+module.exports = { ensureSessionTable, createSession, destroySession, requireEC, bearer, sessionUser };

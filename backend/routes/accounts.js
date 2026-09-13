@@ -13,16 +13,17 @@
 //  details, under a policy that keeps the EC's verification
 //  meaningful:
 //
-//    • Contact details            — always editable.
-//    • Identity, before approval  — editable directly.
-//    • Identity, after approval   — raises a change request the
-//                                   EC reviews; the account keeps
-//                                   working in the meantime.
-//    • Name and faculty, once the student is an approved
-//      candidate — locked, because those strings are already
-//      written into the blockchain candidate record.
-//    • Student ID, after approval — locked; it is the identity
-//      the roster match and the audit trail hang on.
+//    • Contact details              — always editable.
+//    • Anything, before approval    — editable directly.
+//    • Student ID, name and email,  — locked for good: the roster
+//      after approval                 identity the verification, the
+//                                     ballot and the audit trail hang on.
+//    • Faculty and campus, after    — a change request the EC reviews,
+//      approval                       until voting opens on the
+//                                     student's campus; locked from then
+//                                     until the EC ends the election.
+//                                     Also locked while the student has
+//                                     a live nomination.
 // ─────────────────────────────────────────────────────────────
 
 const express = require("express");
@@ -48,14 +49,53 @@ module.exports = function accountRoutes({ db, logAudit }) {
   const router = express.Router();
 
   // ── Shared helper: is this student locked into a candidacy? ──
+  //
+  // A nomination stays 'approved' for ever — that is the historical
+  // record. Matching on status alone therefore locked a candidate's
+  // name permanently, long after the committee had ended the election
+  // the nomination belonged to. The lock exists to stop a name drifting
+  // away from the candidate record while that record is still in play,
+  // so it has to end when the election does.
   async function hasLiveCandidacy(userId) {
     const [rows] = await db.execute(
       `SELECT n.id FROM nominations n
-        WHERE n.student_id=? AND n.status IN ('pending','approved') LIMIT 1`,
+         JOIN elections e ON e.id = n.election_id
+        WHERE n.student_id=? AND n.status IN ('pending','approved')
+          AND e.status IN ('setup','nomination','active') LIMIT 1`,
       [userId]
     );
     return rows.length > 0;
   }
+
+  // ── Verified identity ─────────────────────────────────────
+  // Student ID, name and email are the roster identity the committee
+  // verified. Once verified they stay fixed — before, during and after
+  // any election — and a genuine error goes through the DSA.
+  const VERIFIED_LOCK = ["student_id", "full_name", "email"];
+  const VERIFIED_REASON = {
+    student_id: "Locked once your account is verified. Email dsa@utar.edu.my if it is wrong.",
+    full_name:  "Locked once your account is verified — it must match the DSA roster your ballot is tied to. Email dsa@utar.edu.my if it is wrong.",
+    email:      "Locked once your account is verified — it is part of the identity the Election Committee checked. Email dsa@utar.edu.my if it is wrong.",
+  };
+
+  // ── Voting under way ──────────────────────────────────────
+  // Faculty and campus decide which ballot a student receives, so they
+  // may change up to the moment voting opens and not again until the
+  // committee ends the election. Reg 2(1) sets the SRC up per campus,
+  // so only the student's own campus poll holds them. Returns the
+  // election, or null.
+  const VOTING_LOCK = ["faculty", "campus"];
+  async function votingUnderway(campus) {
+    const [rows] = await db.execute(
+      "SELECT title FROM elections WHERE status='active' AND campus=? LIMIT 1",
+      [campus]
+    );
+    return rows.length ? rows[0].title : null;
+  }
+  const votingReason = (title) =>
+    `Locked while voting in ${title} is under way — your faculty and campus decide which ballot you receive. You can change it again once the Election Committee ends the election.`;
+  const CANDIDACY_REASON =
+    "Locked while your nomination is live — this is on the blockchain candidate record. It reopens once the Election Committee ends the election.";
 
   async function rosterFor(studentId) {
     const [rows] = await db.execute("SELECT * FROM student_roster WHERE student_id=?", [studentId]);
@@ -242,14 +282,16 @@ module.exports = function accountRoutes({ db, logAudit }) {
         [user.id]
       );
 
+      const votingIn = await votingUnderway(user.campus);
+
       // Tell the page exactly what it may offer, instead of the page
       // guessing and the server disagreeing.
       const editable = {
         phone: true,
-        full_name: !candidacyLock,
-        email: true,
-        faculty: !candidacyLock,
-        campus: !candidacyLock,
+        full_name: !user.is_approved,
+        email: !user.is_approved,
+        faculty: !candidacyLock && !votingIn,
+        campus: !candidacyLock && !votingIn,
         student_id: !user.is_approved,
         wallet_address: walletLock.length === 0,
       };
@@ -258,13 +300,29 @@ module.exports = function accountRoutes({ db, logAudit }) {
         faculty: !!user.is_approved, campus: !!user.is_approved,
       };
 
+      // Why each locked field is locked. The page used to carry one
+      // sentence for every lock, so a student whose account was simply
+      // not verified yet was told their name was on the blockchain.
+      const lockReasons = {};
+      if (user.is_approved) {
+        for (const f of VERIFIED_LOCK) lockReasons[f] = VERIFIED_REASON[f];
+      }
+      if (candidacyLock) {
+        for (const f of VOTING_LOCK) lockReasons[f] = CANDIDACY_REASON;
+      }
+      if (votingIn) {
+        for (const f of VOTING_LOCK) lockReasons[f] = votingReason(votingIn);
+      }
+
       res.json({
         success: true,
         user,
         editable,
         needs_review: needsReview,
+        lock_reasons: lockReasons,
         locks: {
           candidacy: candidacyLock,
+          voting_underway: votingIn,
           wallet_election: walletLock.length ? walletLock[0].title : null,
         },
         change_requests: pendingChanges,
@@ -285,6 +343,7 @@ module.exports = function accountRoutes({ db, logAudit }) {
       if (!rows.length) return res.status(404).json({ error: "Account not found" });
       const user = rows[0];
       const candidacyLock = await hasLiveCandidacy(user.id);
+      const votingIn = await votingUnderway(user.campus);
 
       const applied = [];   // changed immediately
       const queued = [];    // sent to the EC
@@ -295,6 +354,17 @@ module.exports = function accountRoutes({ db, logAudit }) {
         const next = req.body[field] === "" ? null : req.body[field];
         const current = user[field] ?? null;
         if (String(next ?? "") === String(current ?? "")) continue;
+
+        // The same locks the profile page was given, checked before the
+        // per-field rules so a crafted request gets the same answer.
+        if (user.is_approved && (field === "full_name" || field === "email")) {
+          refused.push({ field, reason: VERIFIED_REASON[field] });
+          continue;
+        }
+        if (votingIn && VOTING_LOCK.includes(field)) {
+          refused.push({ field, reason: votingReason(votingIn) });
+          continue;
+        }
 
         // ── Validation ────────────────────────────────────────
         if (field === "email") {
@@ -318,11 +388,8 @@ module.exports = function accountRoutes({ db, logAudit }) {
           const [clash] = await db.execute("SELECT id FROM users WHERE student_id=? AND id<>?", [next, userId]);
           if (clash.length) { refused.push({ field, reason: "That student ID belongs to another account" }); continue; }
         }
-        if ((field === "full_name" || field === "faculty") && candidacyLock) {
-          refused.push({
-            field,
-            reason: "Locked while your nomination is under review or approved — this name is already on the blockchain candidate record",
-          });
+        if (["full_name", "faculty", "campus"].includes(field) && candidacyLock) {
+          refused.push({ field, reason: CANDIDACY_REASON });
           continue;
         }
 
@@ -515,6 +582,23 @@ module.exports = function accountRoutes({ db, logAudit }) {
       if (reqRow.status !== "pending") return res.status(400).json({ error: "This request was already reviewed" });
       if (!Object.prototype.hasOwnProperty.call(FIELD_POLICY, reqRow.field_name))
         return res.status(400).json({ error: "Unsupported field" });
+
+      // A request raised before voting opened must not be applied while
+      // it is under way — approving it would move a voter between
+      // ballots mid-poll, the thing the student-side lock prevents. A
+      // campus move is checked against both campuses.
+      if (VOTING_LOCK.includes(reqRow.field_name)) {
+        const [[owner]] = await db.execute("SELECT campus FROM users WHERE id=?", [reqRow.user_id]);
+        const campuses = [owner?.campus];
+        if (reqRow.field_name === "campus") campuses.push(reqRow.new_value);
+        for (const c of campuses.filter(Boolean)) {
+          const votingIn = await votingUnderway(c);
+          if (votingIn)
+            return res.status(409).json({
+              error: `Voting in ${votingIn} (${c}) is under way — this change would move the student between ballots mid-poll. Approve it once the election has ended.`,
+            });
+        }
+      }
 
       await db.execute(`UPDATE users SET ${reqRow.field_name}=? WHERE id=?`, [reqRow.new_value, reqRow.user_id]);
       await db.execute(

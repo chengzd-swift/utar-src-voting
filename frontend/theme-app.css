@@ -275,7 +275,19 @@ tbody tr:hover { background: rgba(74, 143, 224, .05); }
   background: linear-gradient(160deg, rgba(70, 193, 147, .1), rgba(74, 143, 224, .05)) !important;
   border-color: rgba(70, 193, 147, .3) !important;
   box-shadow: var(--shadow-3);
+  /* The receipt and the ballot card below it are plain siblings, and
+     neither carried a margin — so they met edge to edge and this
+     banner's drop shadow (offset 24px downward) fell straight across
+     the card beneath, which reads as two cards overlapping. */
+  margin-bottom: 24px;
 }
+/* Button and hash were both inline-block, so they shared a line and the
+   button's glow ran under the receipt. Stack them instead: a block
+   button still shrink-wraps to its label, and the inline `margin:0 auto`
+   then centres it. */
+.voted-banner .btn-submit { display: block; }
+.voted-banner .tx-hash { margin-top: 2px; }
+.voted-banner br { display: none; }   /* trailing spacer, no longer needed */
 .voted-title { color: var(--green) !important; }
 .dot { box-shadow: 0 0 10px currentColor; }
 

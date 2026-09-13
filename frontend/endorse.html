@@ -303,7 +303,7 @@
     el.className = `toast ${type} show`;
     setTimeout(() => { el.className = `toast ${type}`; }, 4200);
   }
-  function logout() { sessionStorage.clear(); window.location.href = 'login.html'; }
+  function logout() { const t = sessionStorage.getItem('studentToken'); if (t) fetch('/api/auth/logout', { method: 'POST', headers: { Authorization: 'Bearer ' + t }, keepalive: true }).catch(() => {}); sessionStorage.clear(); window.location.href = 'login.html'; }
 
   init();
 </script>

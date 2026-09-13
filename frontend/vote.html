@@ -430,9 +430,16 @@
     }
     if (user.wallet_address && contractInfo) {
       try {
-        const vs=await fetch(`/api/elections/${id}/voter-status/${user.wallet_address}`).then(r=>r.json());
-        if (vs.hasVoted) { showVotedState(); return; }
-        if (!vs.isRegistered) toast('You are not registered as a voter for this election. Contact the Election Committee.','error');
+        const vsToken=sessionStorage.getItem('studentToken');
+        const vs=await fetch(`/api/elections/${id}/voter-status/${user.wallet_address}`,
+          { headers: vsToken ? { Authorization: `Bearer ${vsToken}` } : {} }).then(r=>r.json());
+        // Only a real answer counts: a refused request (e.g. a session from
+        // before sign-in tokens existed) must not read as "not registered".
+        // The contract still refuses a second vote for the same post.
+        if (vs.success) {
+          if (vs.hasVoted) { showVotedState(); return; }
+          if (!vs.isRegistered) toast('You are not registered as a voter for this election. Contact the Election Committee.','error');
+        }
       } catch {}
     }
     await loadCandidates();
@@ -872,19 +879,24 @@
       const d=await r.json();
       if (!r.ok) throw new Error(d.error||'Could not load the list of posts');
 
+      /* The value stays the Reg 2(1) post name the server and the
+         contract use; only the label names the faculty the seat
+         belongs to, so an FICT student reads
+         "Faculty/Institute Representative — FICT". */
       sel.innerHTML='<option value="">— Select position —</option>'+
         d.positions.map(p=>p.eligible
-          ? `<option value="${esc(p.position)}">${esc(p.position)}</option>`
+          ? `<option value="${esc(p.position)}">${esc(p.label||p.position)}</option>`
           : `<option value="" disabled>${esc(p.position)} — not open to you</option>`
         ).join('');
 
-      const blocked=d.positions.filter(p=>!p.eligible);
-      if (blocked.length) {
-        hint.className='resolved';
-        hint.innerHTML=blocked.map(p=>`🔒 ${esc(p.reason)}`).join('<br>');
-      } else {
-        hint.className='resolved'; hint.textContent='';
-      }
+      const lines=[];
+      const scoped=d.positions.find(p=>p.faculty_scope);
+      if (scoped) lines.push(`🏛️ The Faculty/Institute Representative seat is your own faculty's — you would stand for <strong>${esc(scoped.faculty_scope)}</strong>.`);
+      const campusSeat=d.positions.find(p=>p.campus_scope);
+      if (campusSeat) lines.push(`📍 The Campus Wide Representative seat is your own campus's — you would stand for <strong>${esc(campusSeat.campus_scope)} Campus</strong>.`);
+      d.positions.filter(p=>!p.eligible).forEach(p=>lines.push(`🔒 ${esc(p.reason)}`));
+      hint.className='resolved';
+      hint.innerHTML=lines.join('<br>');
       positionsLoaded=true;
     } catch (err) {
       // Never leave the student with an empty dropdown — the server
@@ -1111,7 +1123,7 @@
     el.textContent=msg; el.className=`toast ${type} show`;
     setTimeout(()=>{el.className=`toast ${type}`;},3500);
   }
-  function logout() { sessionStorage.clear(); window.location.href='login.html'; }
+  function logout() { const t = sessionStorage.getItem('studentToken'); if (t) fetch('/api/auth/logout', { method: 'POST', headers: { Authorization: 'Bearer ' + t }, keepalive: true }).catch(() => {}); sessionStorage.clear(); window.location.href = 'login.html'; }
 
   init();
 </script>
