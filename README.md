@@ -62,7 +62,9 @@ utar-src-voting/
 │   └── reset-clean.js         # Returns the system to a first-run state
 ├── db/
 │   ├── setup.sql              # Base schema and committee accounts
-│   └── migration_v5.sql       # v5 schema changes (run once)
+│   ├── migration_v5.sql       # v5 schema changes (run once)
+│   └── samples/
+│       └── student_roster_test_cases.xlsx  # 22-student test roster
 ├── backend/
 │   ├── server.js              # Express app, auth, elections, results
 │   ├── routes/
@@ -186,6 +188,20 @@ Students register themselves at `/register.html`; accounts whose details match t
 
 ## Demo data
 
+### Sample roster
+
+[`db/samples/student_roster_test_cases.xlsx`](db/samples/student_roster_test_cases.xlsx) is a ready-to-import test roster of 22 students across both campuses, with one row for each Regulation XIII case — eligible for everything, can vote but cannot stand, cannot vote, reserved-seat cases, and so on. It has three sheets:
+
+| Sheet | Contents |
+|---|---|
+| **Roster** | The student rows the import reads |
+| **Test Cases** | What each row is designed to test |
+| **How to use** | Import instructions |
+
+To use it, sign in to the Election Committee portal, open **Student Roster**, and upload the file. Students then register at `/register.html` with a student ID from the roster; clean matches are verified automatically.
+
+### Seed script
+
 To load a ready-made walkthrough — a 22-row test roster covering each regulation, demo student accounts with wallets already linked, and elections for both campuses:
 
 ```bash
@@ -207,7 +223,7 @@ Deploy first, so the system starts against an empty contract — ballots already
 
 ## How an election runs
 
-1. **Import the roster** — the committee uploads the DSA student roster (`.xlsx`).
+1. **Import the roster** — the committee uploads the DSA student roster (`.xlsx`). A sample is provided in [`db/samples/`](db/samples/).
 2. **Students register** and link their MetaMask wallet by signing a message.
 3. **Create the election** for a campus and open nominations.
 4. **Students nominate themselves** and name four endorsers, who each confirm from their own account.
