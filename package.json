@@ -1,7 +1,7 @@
 {
   "name": "utar-src-voting",
-  "version": "4.0.0",
-  "description": "UTAR SRC Voting System v4 — Election Committee only, student self-nomination",
+  "version": "5.0.0",
+  "description": "UTAR SRC Blockchain Voting System v5 — council elections on Ethereum under UTAR Regulation XIII",
   "scripts": {
     "start": "node backend/server.js",
     "compile": "npx hardhat compile",

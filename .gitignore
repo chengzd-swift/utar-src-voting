@@ -20,3 +20,5 @@ Thumbs.db
 # Logs
 *.log
 npm-debug.log*
+# Local editor / Claude Code preview config
+.claude/
